@@ -6,6 +6,7 @@ import { useStarMutation } from '../../data/hooks'
 import { documentTitle, timeAgo } from '../../data/format'
 import { prefetchCanvas } from '../../graph/loadCanvas'
 import { cn } from '../../ui/cn'
+import { DeleteDocumentButton } from './DeleteDocument'
 
 export function warmDocument() {
   prefetchRoute('document')
@@ -46,6 +47,7 @@ export function DocumentRow({ doc, compact }: { doc: DocumentDto; compact?: bool
           <Star className={cn('size-4', doc.starred && 'fill-amber text-amber')} />
         </button>
       ) : null}
+      {!compact && <DeleteDocumentButton doc={doc} />}
     </li>
   )
 }

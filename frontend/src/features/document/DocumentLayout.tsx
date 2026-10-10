@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { Link, NavLink, useLocation, useOutlet, useParams, useSearchParams } from 'react-router'
+import { Link, NavLink, useLocation, useNavigate, useOutlet, useParams, useSearchParams } from 'react-router'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { AnimatePresence, m } from 'motion/react'
 import { AlertTriangle, BookOpenText, ChevronLeft, FileText, Layers, LayoutGrid, ListChecks, MessageSquareText, RotateCcw, Star, Target } from 'lucide-react'
@@ -18,6 +18,7 @@ import { ErrorNotice, ProgressBar, Skeleton } from '../../ui/Feedback'
 import { cn } from '../../ui/cn'
 import type { DocumentContext } from './context'
 import { SourceDrawer } from './SourceDrawer'
+import { DeleteDocumentButton } from '../library/DeleteDocument'
 
 const TABS: Array<{ to: string; label: string; icon: typeof LayoutGrid; module: RouteModuleName; end?: boolean }> = [
   { to: '', label: 'Overview', icon: LayoutGrid, module: 'overview', end: true },
@@ -71,6 +72,7 @@ export default function DocumentLayout() {
 
 function DocumentHeader({ context: { doc } }: { context: DocumentContext }) {
   const star = useStarMutation()
+  const navigate = useNavigate()
   const [params, setParams] = useSearchParams()
   const { pathname } = useLocation()
   const base = `/d/${doc.id}`
@@ -99,6 +101,7 @@ function DocumentHeader({ context: { doc } }: { context: DocumentContext }) {
           >
             {doc.starred ? 'Starred' : 'Star'}
           </Button>
+          <DeleteDocumentButton doc={doc} variant="button" onDeleted={() => navigate('/library', { replace: true })} />
           {doc.status === 'ready' && (
             <Button
               size="sm"
