@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react'
+import { useAiJob } from '../../data/generation'
+import { BusyNote } from '../../app/GenerationIndicator'
 import { Link, useSearchParams } from 'react-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { m } from 'motion/react'
@@ -22,8 +24,8 @@ export default function FlashcardsPage() {
   const dueOnly = params.get('due') === '1'
   const cards = useQuery({ queryKey: qk.flashcards(doc.id, dueOnly), queryFn: ({ signal }) => studyApi.flashcards(doc.id, dueOnly, signal) })
   const qc = useQueryClient()
-  const generate = useMutation({
-    mutationFn: (count: number) => studyApi.generateFlashcards(doc.id, count),
+  const generate = useAiJob(doc.id, 'flashcards', {
+    run: (count: number) => studyApi.generateFlashcards(doc.id, count),
     onSuccess: () => void qc.invalidateQueries({ queryKey: ['documents', doc.id, 'flashcards'] }),
   })
 
@@ -67,14 +69,15 @@ export default function FlashcardsPage() {
             action={
               <div className="flex flex-col items-start gap-3">
                 <div className="flex gap-2">
-                  <Button variant="primary" busy={generate.isPending && generate.variables === 10} disabled={generate.isPending} onClick={() => generate.mutate(10)}>
+                  <Button variant="primary" busy={generate.isPending && generate.variables === 10} disabled={generate.disabled} onClick={() => generate.mutate(10)}>
                     Generate 10 cards
                   </Button>
-                  <Button busy={generate.isPending && generate.variables === 20} disabled={generate.isPending} onClick={() => generate.mutate(20)}>
+                  <Button busy={generate.isPending && generate.variables === 20} disabled={generate.disabled} onClick={() => generate.mutate(20)}>
                     20 cards
                   </Button>
                 </div>
                 {generate.isPending && <ProgressBar label="Writing flashcards" className="w-64" />}
+                <BusyNote job={generate.blockedBy} />
                 {generate.error ? <ErrorNotice error={generate.error} onRetry={() => generate.mutate(generate.variables ?? 10)} /> : null}
               </div>
             }
@@ -84,12 +87,24 @@ export default function FlashcardsPage() {
     )
   }
 
-  return <Session key={`${dueOnly}-${cards.data.length}`} cards={cards.data} toggle={toggle} onAddMore={() => generate.mutate(10)} adding={generate.isPending} />
+  return <Session key={`${dueOnly}-${cards.data.length}`} cards={cards.data} toggle={toggle} onAddMore={() => generate.mutate(10)} adding={generate.isPending} addDisabled={generate.disabled} />
 }
 
 type Outcome = 'known' | 'review'
 
-function Session({ cards, toggle, onAddMore, adding }: { cards: FlashcardDto[]; toggle: React.ReactNode; onAddMore: () => void; adding: boolean }) {
+function Session({
+  cards,
+  toggle,
+  onAddMore,
+  adding,
+  addDisabled,
+}: {
+  cards: FlashcardDto[]
+  toggle: React.ReactNode
+  onAddMore: () => void
+  adding: boolean
+  addDisabled: boolean
+}) {
   const { doc } = useDocumentContext()
   const qc = useQueryClient()
   const [order, setOrder] = useState(() => cards.map((_, i) => i))
@@ -177,7 +192,7 @@ function Session({ cards, toggle, onAddMore, adding }: { cards: FlashcardDto[]; 
             >
               Go through again
             </Button>
-            <Button variant="ghost" busy={adding} onClick={onAddMore}>
+            <Button variant="ghost" busy={adding} disabled={addDisabled} onClick={onAddMore}>
               Add 10 more cards
             </Button>
             <Link to={`/d/${doc.id}`} className="inline-flex h-9 items-center px-3.5 text-text-2 hover:text-text">

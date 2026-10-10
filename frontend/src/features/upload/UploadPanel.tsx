@@ -97,7 +97,15 @@ export function UploadPanel() {
         <Step
           status={steps.summary}
           label="Summary"
-          detail={steps.summary === 'active' ? 'Writing an overview with page references.' : steps.summary === 'failed' ? describeError(errors.summary) : undefined}
+          detail={
+            steps.summary === 'active'
+              ? steps.concepts === 'active'
+                ? 'Queued: starts when the concept map is done.'
+                : 'Writing an overview with page references.'
+              : steps.summary === 'failed'
+                ? describeError(errors.summary)
+                : undefined
+          }
         >
           {steps.summary === 'failed' && (
             <Button size="sm" className="mt-2" icon={<RotateCcw className="size-3.5" />} onClick={() => retryStep('summary')}>

@@ -12,6 +12,7 @@ import {
   initialUploadState, uploadReducer, type GenerationStep, type UploadEvent, type UploadState,
 } from '../../domain/uploadPipeline'
 import { prefetchCanvas } from '../../graph/loadCanvas'
+import { trackGeneration, waitForIdle } from '../../data/generation'
 import { toast } from '../../ui/toast'
 
 interface UploadStore {
@@ -49,11 +50,13 @@ export const useUpload = create<UploadStore>((set, get) => {
     dispatch({ type: 'stepStarted', step })
     const signal = generationAbort?.signal
     try {
+      // One AI request at a time: wait for anything else (e.g. notes started elsewhere) to finish.
+      await waitForIdle()
       if (step === 'summary') {
-        const summary = await studyApi.generateSummary(doc.id, signal)
+        const summary = await trackGeneration(doc.id, 'summary', () => studyApi.generateSummary(doc.id, signal))
         queryClient.setQueryData(qk.summary(doc.id), summary)
       } else {
-        const map = await studyApi.generateConcepts(doc.id, signal)
+        const map = await trackGeneration(doc.id, 'concepts', () => studyApi.generateConcepts(doc.id, signal))
         queryClient.setQueryData(qk.concepts(doc.id), map)
         if (current(session)) set({ graph: toKnowledgeGraph(map, doc.page_count) })
         // It forms here, on the dashboard; the document overview then shows it finished.
@@ -81,8 +84,11 @@ export const useUpload = create<UploadStore>((set, get) => {
     refreshLists()
     if (latest.status !== 'ready' || !current(session)) return
     generationAbort = new AbortController()
-    void runStep(session, latest, 'summary')
-    void runStep(session, latest, 'concepts')
+    // Sequential, not parallel: a local model handles one request at a time. The concept map goes
+    // first so the graph forms as early as possible.
+    dispatch({ type: 'stepStarted', step: 'summary' })
+    await runStep(session, latest, 'concepts')
+    if (current(session) && !generationAbort.signal.aborted) await runStep(session, latest, 'summary')
   }
 
   return {

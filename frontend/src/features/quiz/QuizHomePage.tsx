@@ -1,6 +1,8 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router'
-import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query'
+import { offerQuiz, useAiJob } from '../../data/generation'
+import { BusyNote } from '../../app/GenerationIndicator'
+import { Link } from 'react-router'
+import { useQueries, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ArrowRight, ListChecks } from 'lucide-react'
 import { studyApi } from '../../api/endpoints/study'
 import { qk } from '../../api/queryKeys'
@@ -15,7 +17,6 @@ const SIZES = ['5', '10', '15', '20'] as const
 export default function QuizHomePage() {
   const { doc } = useDocumentContext()
   const qc = useQueryClient()
-  const navigate = useNavigate()
   const [size, setSize] = useState<(typeof SIZES)[number]>('5')
   const quizzes = useQuery({ queryKey: qk.quizzes(doc.id), queryFn: ({ signal }) => studyApi.quizzes(doc.id, signal) })
   const attempts = useQueries({
@@ -24,12 +25,12 @@ export default function QuizHomePage() {
       queryFn: ({ signal }: { signal: AbortSignal }) => studyApi.attempts(q.id, signal),
     })),
   })
-  const create = useMutation({
-    mutationFn: () => studyApi.generateQuiz(doc.id, Number(size)),
-    onSuccess: (quiz) => {
+  const create = useAiJob(doc.id, 'quiz', {
+    run: () => studyApi.generateQuiz(doc.id, Number(size)),
+    onSuccess: (quiz, _arg, { stillHere }) => {
       void qc.invalidateQueries({ queryKey: qk.quizzes(doc.id) })
       qc.setQueryData(qk.quiz(quiz.id), quiz)
-      navigate(`/d/${doc.id}/quiz/${quiz.id}`)
+      offerQuiz(doc.id, quiz.id, stillHere)
     },
   })
 
@@ -42,11 +43,12 @@ export default function QuizHomePage() {
         </p>
         <div className="mt-4 flex flex-wrap items-center gap-3">
           <SegmentedControl label="Number of questions" value={size} onChange={setSize} options={SIZES.map((s) => ({ value: s, label: `${s} questions` }))} />
-          <Button variant="primary" busy={create.isPending} onClick={() => create.mutate()}>
+          <Button variant="primary" busy={create.isPending} disabled={!!create.blockedBy} onClick={() => create.mutate()}>
             {create.isPending ? 'Writing questions…' : 'Start quiz'}
           </Button>
         </div>
         {create.isPending && <ProgressBar label="Writing questions" className="mt-4" />}
+        <BusyNote job={create.blockedBy} className="mt-3 text-sm text-text-3" />
         {create.error ? <ErrorNotice className="mt-4" error={create.error} onRetry={() => create.mutate()} /> : null}
       </section>
 

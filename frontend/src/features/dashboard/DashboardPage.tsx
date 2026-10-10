@@ -1,6 +1,8 @@
 import { useEffect, useMemo } from 'react'
+import { useAiJob } from '../../data/generation'
+import { BusyNote } from '../../app/GenerationIndicator'
 import { Link } from 'react-router'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQueryClient } from '@tanstack/react-query'
 import { AnimatePresence, m } from 'motion/react'
 import { ArrowRight, Network, Upload } from 'lucide-react'
 import { studyApi } from '../../api/endpoints/study'
@@ -197,8 +199,8 @@ function CanvasHeader({
 
 function BuildMapOverlay({ docId, pageCount, error }: { docId: string; pageCount: number; error: unknown }) {
   const qc = useQueryClient()
-  const build = useMutation({
-    mutationFn: () => studyApi.generateConcepts(docId),
+  const build = useAiJob(docId, 'concepts', {
+    run: () => studyApi.generateConcepts(docId),
     onSuccess: (map) => qc.setQueryData(qk.concepts(docId), map),
   })
   return (
@@ -209,9 +211,10 @@ function BuildMapOverlay({ docId, pageCount, error }: { docId: string; pageCount
       </div>
       <p className="text-base text-text-2">Map the key concepts across all {pageCount} pages and how they connect.</p>
       {(build.error || error) ? <p className="text-sm text-incorrect">{describeError(build.error ?? error)}</p> : null}
-      <Button variant="primary" busy={build.isPending} onClick={() => build.mutate()}>
+      <Button variant="primary" busy={build.isPending} disabled={!!build.blockedBy} onClick={() => build.mutate()}>
         {build.isPending ? 'Building concept map…' : 'Build concept map'}
       </Button>
+      <BusyNote job={build.blockedBy} />
     </div>
   )
 }

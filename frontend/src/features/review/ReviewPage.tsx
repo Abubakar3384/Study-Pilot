@@ -1,6 +1,8 @@
 import { useMemo } from 'react'
-import { Link, useNavigate } from 'react-router'
-import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query'
+import { offerQuiz, useAiJob } from '../../data/generation'
+import { BusyNote } from '../../app/GenerationIndicator'
+import { Link } from 'react-router'
+import { useQueries, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ArrowRight, Target } from 'lucide-react'
 import { studyApi } from '../../api/endpoints/study'
 import { qk } from '../../api/queryKeys'
@@ -17,7 +19,6 @@ import '@fontsource-variable/source-serif-4/opsz.css'
 /** Strengths, weaknesses and mistakes across this document's quizzes (latest attempt of each). */
 export default function ReviewPage() {
   const { doc } = useDocumentContext()
-  const navigate = useNavigate()
   const qc = useQueryClient()
   const quizzes = useQuery({ queryKey: qk.quizzes(doc.id), queryFn: ({ signal }) => studyApi.quizzes(doc.id, signal) })
   const attempts = useQueries({
@@ -44,11 +45,11 @@ export default function ReviewPage() {
   const strong = perf?.topics.filter((t) => t.status === 'strong') ?? []
   const other = perf?.topics.filter((t) => t.status === 'mixed' || t.status === 'few') ?? []
 
-  const focused = useMutation({
-    mutationFn: () => studyApi.generateQuiz(doc.id, 5, [...new Set(weak.flatMap((t) => t.concept.pages))]),
-    onSuccess: (q) => {
+  const focused = useAiJob(doc.id, 'quiz', {
+    run: () => studyApi.generateQuiz(doc.id, 5, [...new Set(weak.flatMap((t) => t.concept.pages))]),
+    onSuccess: (q, _arg, { stillHere }) => {
       void qc.invalidateQueries({ queryKey: qk.quizzes(doc.id) })
-      navigate(`/d/${doc.id}/quiz/${q.id}`)
+      offerQuiz(doc.id, q.id, stillHere)
     },
   })
 
@@ -105,9 +106,10 @@ export default function ReviewPage() {
           <>
             <p className="mt-2 font-semibold">Practise {weak.length === 1 ? weak[0]!.concept.title : `${weak.length} weak concepts`}</p>
             <p className="mt-1 text-base text-text-2">A short quiz drawn only from the pages behind these concepts.</p>
-            <Button className="mt-3" variant="primary" busy={focused.isPending} onClick={() => focused.mutate()}>
+            <Button className="mt-3" variant="primary" busy={focused.isPending} disabled={!!focused.blockedBy} onClick={() => focused.mutate()}>
               Quiz me on weak concepts
             </Button>
+            <BusyNote job={focused.blockedBy} className="mt-2 text-sm text-text-3" />
             {focused.error ? <ErrorNotice className="mt-3" error={focused.error} onRetry={() => focused.mutate()} /> : null}
           </>
         ) : due && due.due > 0 ? (

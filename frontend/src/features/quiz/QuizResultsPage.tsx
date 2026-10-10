@@ -1,6 +1,8 @@
 import { useMemo } from 'react'
+import { offerQuiz, useAiJob } from '../../data/generation'
+import { BusyNote } from '../../app/GenerationIndicator'
 import { Link, useNavigate, useParams } from 'react-router'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Check, RotateCcw, Target, X } from 'lucide-react'
 import { studyApi } from '../../api/endpoints/study'
 import { qk } from '../../api/queryKeys'
@@ -26,11 +28,11 @@ export default function QuizResultsPage() {
   const perf = useMemo(() => (graph && attempt ? computeTopicPerformance(graph, attempt.results) : null), [graph, attempt])
   const weak = perf?.topics.filter((t) => t.status === 'weak') ?? []
 
-  const focused = useMutation({
-    mutationFn: () => studyApi.generateQuiz(doc.id, 5, [...new Set(weak.flatMap((t) => t.concept.pages))]),
-    onSuccess: (q) => {
+  const focused = useAiJob(doc.id, 'quiz', {
+    run: () => studyApi.generateQuiz(doc.id, 5, [...new Set(weak.flatMap((t) => t.concept.pages))]),
+    onSuccess: (q, _arg, { stillHere }) => {
       void qc.invalidateQueries({ queryKey: qk.quizzes(doc.id) })
-      navigate(`/d/${doc.id}/quiz/${q.id}`)
+      offerQuiz(doc.id, q.id, stillHere)
     },
   })
 
@@ -80,12 +82,13 @@ export default function QuizResultsPage() {
             Retake
           </Button>
           {weak.length > 0 && (
-            <Button variant="primary" icon={<Target className="size-4" />} busy={focused.isPending} onClick={() => focused.mutate()}>
+            <Button variant="primary" icon={<Target className="size-4" />} busy={focused.isPending} disabled={!!focused.blockedBy} onClick={() => focused.mutate()}>
               New quiz on weak topics
             </Button>
           )}
         </div>
       </header>
+      <BusyNote job={focused.blockedBy} />
       {focused.error ? <ErrorNotice error={focused.error} onRetry={() => focused.mutate()} /> : null}
 
       <section aria-labelledby="topics">

@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { useAiJob } from '../../data/generation'
+import { BusyNote } from '../../app/GenerationIndicator'
 import { useSearchParams } from 'react-router'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQueryClient } from '@tanstack/react-query'
 import { BookOpenText, Check, Pencil, RefreshCw } from 'lucide-react'
 import { studyApi } from '../../api/endpoints/study'
 import { qk } from '../../api/queryKeys'
@@ -21,8 +23,8 @@ export default function NotesPage() {
   const qc = useQueryClient()
   const [editing, setEditing] = useState(false)
   const [confirmRegen, setConfirmRegen] = useState(false)
-  const generate = useMutation({
-    mutationFn: () => studyApi.generateNotes(doc.id),
+  const generate = useAiJob(doc.id, 'notes', {
+    run: () => studyApi.generateNotes(doc.id),
     onSuccess: (n) => {
       qc.setQueryData(qk.notes(doc.id), n)
       setConfirmRegen(false)
@@ -47,10 +49,11 @@ export default function NotesPage() {
           body="Generate structured study notes: sections by topic, concise points, each section linked to the page it comes from. You can edit them afterwards."
           action={
             <div className="flex w-full flex-col items-start gap-3">
-              <Button variant="primary" busy={generate.isPending} onClick={() => generate.mutate()}>
+              <Button variant="primary" busy={generate.isPending} disabled={!!generate.blockedBy} onClick={() => generate.mutate()}>
                 {generate.isPending ? 'Writing notes…' : 'Generate notes'}
               </Button>
               {generate.isPending && <ProgressBar label="Writing notes" className="max-w-sm" />}
+              <BusyNote job={generate.blockedBy} />
               {generate.error ? <ErrorNotice error={generate.error} onRetry={() => generate.mutate()} className="w-full" /> : null}
             </div>
           }

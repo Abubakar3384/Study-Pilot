@@ -13,6 +13,8 @@ export interface ConceptActions {
   onOpenNotes?: (concept: Concept) => void
   onQuiz?: (concept: Concept) => void
   quizBusy?: boolean
+  /** Another AI job is running; the quiz can't start yet. */
+  quizBlocked?: boolean
 }
 
 const PAGES_SHOWN = 6
@@ -113,6 +115,8 @@ export function ConceptPanel({
                   className="btn-glow"
                   icon={<ListChecks className="size-4" />}
                   busy={actions.quizBusy}
+                  disabled={actions.quizBlocked}
+                  title={actions.quizBlocked ? 'Waiting for the current AI task to finish' : undefined}
                   onClick={() => actions.onQuiz!(concept)}
                 >
                   Quiz me on this

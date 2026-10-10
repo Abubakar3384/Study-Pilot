@@ -5,6 +5,7 @@ import { NavRail, MobileTabBar } from './Navigation'
 import { Toaster } from '../ui/toast'
 import { CanvasHost } from '../graph/CanvasHost'
 import { UploadBridge } from './UploadBridge'
+import { GenerationIndicator } from './GenerationIndicator'
 import { ExitInert } from '../motion/ExitInert'
 import { fadeRise } from '../motion/variants'
 
@@ -44,6 +45,7 @@ export function AppShell() {
       <MobileTabBar />
       <CanvasHost />
       <UploadBridge />
+      <GenerationIndicator />
       <Toaster />
     </div>
   )

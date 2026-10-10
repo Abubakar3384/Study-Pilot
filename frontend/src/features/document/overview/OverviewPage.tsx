@@ -1,6 +1,8 @@
 import { useEffect, useMemo } from 'react'
+import { offerQuiz, useAiJob, type Job } from '../../../data/generation'
+import { BusyNote } from '../../../app/GenerationIndicator'
 import { Link, useNavigate, useSearchParams } from 'react-router'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQueryClient } from '@tanstack/react-query'
 import { ArrowRight, BookOpenText, Layers, ListChecks, MessageSquareText, Network, Compass } from 'lucide-react'
 import { studyApi } from '../../../api/endpoints/study'
 import { describeError } from '../../../api/errors'
@@ -35,15 +37,15 @@ export default function OverviewPage() {
   const knownIds = useMemo(() => (map.graph ? new Set(map.graph.concepts.map((c) => c.id)) : null), [map.graph])
   useConceptParam(store, knownIds)
 
-  const build = useMutation({
-    mutationFn: () => studyApi.generateConcepts(doc.id),
+  const build = useAiJob(doc.id, 'concepts', {
+    run: () => studyApi.generateConcepts(doc.id),
     onSuccess: (m) => qc.setQueryData(qk.concepts(doc.id), m),
   })
-  const quiz = useMutation({
-    mutationFn: (c: Concept) => studyApi.generateQuiz(doc.id, 5, c.pages),
-    onSuccess: (q) => {
+  const quiz = useAiJob(doc.id, 'quiz', {
+    run: (c: Concept) => studyApi.generateQuiz(doc.id, 5, c.pages),
+    onSuccess: (q, _c, { stillHere }) => {
       void qc.invalidateQueries({ queryKey: qk.quizzes(doc.id) })
-      navigate(`/d/${doc.id}/quiz/${q.id}`)
+      offerQuiz(doc.id, q.id, stillHere)
     },
   })
 
@@ -70,11 +72,13 @@ export default function OverviewPage() {
             onOpenNotes: (c) => navigate(`/d/${doc.id}/notes?near=${c.pages[0]}`),
             onQuiz: (c) => quiz.mutate(c),
             quizBusy: quiz.isPending,
+            quizBlocked: !!quiz.blockedBy,
           }}
           aside={
             <BuildMap
               loading={map.isPending}
               pending={build.isPending}
+              blockedBy={build.blockedBy}
               error={build.error ?? map.error}
               pageCount={doc.page_count}
               onBuild={() => build.mutate()}
@@ -100,12 +104,14 @@ export default function OverviewPage() {
 function BuildMap({
   loading,
   pending,
+  blockedBy,
   error,
   pageCount,
   onBuild,
 }: {
   loading: boolean
   pending: boolean
+  blockedBy?: Job
   error: unknown
   pageCount: number
   onBuild: () => void
@@ -131,9 +137,12 @@ function BuildMap({
       {pending ? (
         <ProgressBar label="Building concept map" className="mt-1" />
       ) : (
-        <Button variant="primary" onClick={onBuild}>
-          Build concept map
-        </Button>
+        <>
+          <Button variant="primary" disabled={!!blockedBy} onClick={onBuild}>
+            Build concept map
+          </Button>
+          <BusyNote job={blockedBy} />
+        </>
       )}
       {error && !pending ? <ErrorNotice error={error} onRetry={onBuild} className="w-full" /> : null}
     </div>
@@ -143,8 +152,8 @@ function BuildMap({
 function SummarySection({ docId }: { docId: string }) {
   const summary = useSummary(docId)
   const qc = useQueryClient()
-  const generate = useMutation({
-    mutationFn: () => studyApi.generateSummary(docId),
+  const generate = useAiJob(docId, 'summary', {
+    run: () => studyApi.generateSummary(docId),
     onSuccess: (s) => qc.setQueryData(qk.summary(docId), s),
   })
 
@@ -178,14 +187,15 @@ function SummarySection({ docId }: { docId: string }) {
       ) : (
         <div className="mt-3 flex flex-col items-start gap-3">
           <p className="text-base text-text-2">No summary yet. It gives you an overview and the key points, each linked to its page.</p>
-          <Button variant="primary" busy={generate.isPending} onClick={() => generate.mutate()}>
+          <Button variant="primary" busy={generate.isPending} disabled={!!generate.blockedBy} onClick={() => generate.mutate()}>
             {generate.isPending ? 'Writing summary…' : 'Generate summary'}
           </Button>
           {generate.isPending && <ProgressBar label="Writing summary" />}
+          <BusyNote job={generate.blockedBy} />
           {generate.error ? <ErrorNotice error={generate.error} onRetry={() => generate.mutate()} className="w-full" /> : null}
         </div>
       )}
-      {generate.isError && summary.data ? <p className="mt-2 text-sm text-incorrect">{describeError(generate.error)}</p> : null}
+      {generate.error && summary.data ? <p className="mt-2 text-sm text-incorrect">{describeError(generate.error)}</p> : null}
     </section>
   )
 }

@@ -5,6 +5,7 @@ import { FileUp } from 'lucide-react'
 import { useUpload } from '../features/upload/uploadStore'
 import { prefetchCanvas } from '../graph/loadCanvas'
 import { t } from '../motion/variants'
+import { bindNavigator } from './navigator'
 
 const hasFiles = (e: DragEvent) => !!e.dataTransfer && Array.from(e.dataTransfer.types).includes('Files')
 
@@ -21,7 +22,11 @@ export function UploadBridge() {
 
   useEffect(() => {
     bind(input.current, navigate)
-    return () => bind(null, null)
+    bindNavigator(navigate)
+    return () => {
+      bind(null, null)
+      bindNavigator(null)
+    }
   }, [bind, navigate])
 
   useEffect(() => {

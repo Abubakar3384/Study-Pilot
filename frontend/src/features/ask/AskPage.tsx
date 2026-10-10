@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { Link, useParams } from 'react-router'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useAiJob } from '../../data/generation'
+import { appNavigate } from '../../app/navigator'
+import { BusyNote } from '../../app/GenerationIndicator'
+import { toast } from '../../ui/toast'
 import { m } from 'motion/react'
 import { ArrowUp, MessageSquarePlus, SearchX } from 'lucide-react'
 import { chatApi } from '../../api/endpoints/chat'
@@ -22,7 +26,6 @@ const MAX = 4000
 export default function AskPage() {
   const { doc } = useDocumentContext()
   const { conversationId } = useParams()
-  const navigate = useNavigate()
   const qc = useQueryClient()
   const list = useQuery({ queryKey: qk.conversations(doc.id), queryFn: ({ signal }) => chatApi.conversations(doc.id, signal) })
   const convo = useQuery({
@@ -32,28 +35,30 @@ export default function AskPage() {
   })
   const { graph } = useKnowledgeGraph(doc)
   const [draft, setDraft] = useState('')
-  const [pending, setPending] = useState<string | null>(null)
   const bottom = useRef<HTMLDivElement>(null)
 
-  const send = useMutation({
-    mutationFn: (text: string) => chatApi.send(doc.id, text, conversationId),
-    onMutate: (text) => {
-      setPending(text)
-      setDraft('')
-    },
-    onSuccess: async (res) => {
+  // The question in flight lives in the app-wide job tracker, so leaving and coming back keeps it.
+  const send = useAiJob(doc.id, 'chat', {
+    run: (q: { text: string; conversationId?: string }) => chatApi.send(doc.id, q.text, q.conversationId),
+    onSuccess: async (res, q, { stillHere }) => {
       // The thread is re-read from the server so it shows exactly what was stored.
       await qc.invalidateQueries({ queryKey: qk.conversation(doc.id, res.conversation_id) })
       void qc.invalidateQueries({ queryKey: qk.conversations(doc.id), exact: true })
       void qc.invalidateQueries({ queryKey: qk.activity })
-      if (!conversationId) navigate(`/d/${doc.id}/ask/${res.conversation_id}`, { replace: true })
-      setPending(null)
+      const path = `/d/${doc.id}/ask/${res.conversation_id}`
+      if (stillHere) {
+        if (!q.conversationId) appNavigate(path)
+      } else {
+        toast.info('Your answer is ready.', { label: 'Open', onClick: () => appNavigate(path) })
+      }
     },
-    onError: (_err, text) => {
-      setPending(null)
-      setDraft(text) // nothing was saved; give the question back
-    },
+    // Nothing was saved when sending failed: give the question back.
+    onError: (_e, q) => setDraft((d) => d || q.text),
   })
+  // Only show the in-flight question (or its error) in the conversation it belongs to.
+  const here = send.variables && send.variables.conversationId === conversationId
+  const pending = send.isPending && here ? send.variables!.text : null
+  const sendError = here ? send.error : undefined
 
   const messages: MessageDto[] = conversationId ? (convo.data?.messages ?? []) : []
   useEffect(() => {
@@ -72,8 +77,9 @@ export default function AskPage() {
 
   const submit = (text = draft) => {
     const q = text.trim()
-    if (!q || send.isPending) return
-    send.mutate(q.slice(0, MAX))
+    if (!q || send.disabled) return
+    setDraft('')
+    send.mutate({ text: q.slice(0, MAX), conversationId })
   }
 
   return (
@@ -161,7 +167,7 @@ export default function AskPage() {
               )}
             </ol>
           )}
-          {send.error ? <ErrorNotice className="mt-4" error={send.error} onRetry={() => submit()} /> : null}
+          {sendError ? <ErrorNotice className="mt-4" error={sendError} onRetry={() => submit(draft || send.variables?.text)} /> : null}
           <div ref={bottom} />
         </div>
 
@@ -191,10 +197,11 @@ export default function AskPage() {
               }}
               className="max-h-48 min-h-10 flex-1 resize-none bg-transparent px-2 py-2 text-md placeholder:text-text-3 focus:outline-none [field-sizing:content]"
             />
-            <IconButton type="submit" variant="primary" label="Send question" disabled={!draft.trim()} busy={send.isPending}>
+            <IconButton type="submit" variant="primary" label="Send question" disabled={!draft.trim() || !!send.blockedBy} busy={send.isPending}>
               <ArrowUp className="size-4" />
             </IconButton>
           </div>
+          <BusyNote job={send.blockedBy} className="px-2 pt-1 text-xs text-text-3" />
           <p className="flex justify-between px-2 pt-1 text-[11px] text-text-3">
             <span className="hidden sm:inline">
               <Kbd>Enter</Kbd> send · <Kbd>Shift</Kbd>+<Kbd>Enter</Kbd> new line
