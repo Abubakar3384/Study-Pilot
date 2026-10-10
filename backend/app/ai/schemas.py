@@ -4,13 +4,25 @@ Each model exposes `cited_pages()` so the runner can check every page reference 
 the pages that were actually given to the model for this document.
 """
 
-from typing import Annotated, Literal
+import re
+from typing import Annotated, Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, StringConstraints, field_validator, model_validator
+from pydantic import BaseModel, BeforeValidator, ConfigDict, Field, StringConstraints, field_validator, model_validator
 
 Text = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=2000)]
 ShortText = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=300)]
-PageNumber = Annotated[int, Field(ge=1)]
+
+
+def _page_from_text(value: Any) -> Any:
+    """Small local models often write pages as "Page 3", "p. 3" or "3-4"; keep the first number."""
+    if isinstance(value, str):
+        match = re.search(r"\d+", value)
+        if match:
+            return int(match.group())
+    return value
+
+
+PageNumber = Annotated[int, BeforeValidator(_page_from_text), Field(ge=1)]
 
 
 class _Out(BaseModel):
