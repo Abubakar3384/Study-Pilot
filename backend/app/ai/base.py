@@ -1,6 +1,7 @@
 """Provider abstraction. A provider turns an LLMRequest into raw text; it knows nothing
 about parsing or validation (that is app.ai.runner's job)."""
 
+import threading
 from dataclasses import dataclass, field, replace
 from typing import Any, Protocol
 
@@ -23,6 +24,8 @@ class LLMRequest:
     # deterministic output from it so tests don't depend on prompt wording.
     payload: dict[str, Any] = field(default_factory=dict)
     max_tokens: int = 4096
+    # Set when the student presses Stop; providers that can stop early (Ollama) watch it.
+    cancel: threading.Event | None = field(default=None, compare=False, repr=False)
 
     def with_feedback(self, feedback: str) -> "LLMRequest":
         return replace(
@@ -38,6 +41,11 @@ class ProviderError(Exception):
     def __init__(self, message: str, retryable: bool = True):
         super().__init__(message)
         self.retryable = retryable
+
+
+class ProviderCancelled(ProviderError):
+    def __init__(self, message: str = "Generation was stopped"):
+        super().__init__(message, retryable=False)
 
 
 class ProviderAuthError(ProviderError):

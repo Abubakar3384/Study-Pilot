@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { offerQuiz, useAiJob } from '../../data/generation'
-import { BusyNote } from '../../app/GenerationIndicator'
+import { BusyNote, StopButton } from '../../app/GenerationIndicator'
 import { Link } from 'react-router'
 import { useQueries, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ArrowRight, ListChecks } from 'lucide-react'
@@ -26,7 +26,7 @@ export default function QuizHomePage() {
     })),
   })
   const create = useAiJob(doc.id, 'quiz', {
-    run: () => studyApi.generateQuiz(doc.id, Number(size)),
+    run: (_, signal) => studyApi.generateQuiz(doc.id, Number(size), undefined, signal),
     onSuccess: (quiz, _arg, { stillHere }) => {
       void qc.invalidateQueries({ queryKey: qk.quizzes(doc.id) })
       qc.setQueryData(qk.quiz(quiz.id), quiz)
@@ -47,7 +47,12 @@ export default function QuizHomePage() {
             {create.isPending ? 'Writing questions…' : 'Start quiz'}
           </Button>
         </div>
-        {create.isPending && <ProgressBar label="Writing questions" className="mt-4" />}
+        {create.isPending && (
+          <div className="mt-4 flex items-center gap-3">
+            <ProgressBar label="Writing questions" className="flex-1" />
+            <StopButton onStop={create.stop} stopping={create.stopping} />
+          </div>
+        )}
         <BusyNote job={create.blockedBy} className="mt-3 text-sm text-text-3" />
         {create.error ? <ErrorNotice className="mt-4" error={create.error} onRetry={() => create.mutate()} /> : null}
       </section>

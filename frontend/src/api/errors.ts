@@ -19,6 +19,7 @@ export class ApiError extends Error {
 const FRIENDLY: Record<string, string> = {
   network_error: "Can't reach the StudyPilot server. Check that it's running and try again.",
   document_not_ready: 'This document is still being read, or reading it failed.',
+  ai_cancelled: 'Stopped. Nothing was saved.',
   ai_unavailable: 'The AI service is not responding right now. Nothing was saved. Try again in a moment.',
   ai_not_configured:
     'The AI service rejected the server credentials. Ask whoever runs the server to check its configuration.',

@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Body, Depends, status
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_db, get_study
+from app.ai.runner import AIRunner
+from app.api.deps import get_db, get_runner, get_study
 from app.db.models import GeneratedContent, Quiz, QuizAttempt
 from app.errors import RequestValidationAppError
 from app.ai.schemas import NotesOutput
@@ -43,6 +44,14 @@ def _attempt_out(quiz: Quiz, attempt: QuizAttempt) -> dict:
             for r in result.results
         ],
     }
+
+
+# -------------------------------------------------------------- stop
+
+@router.post("/ai/cancel", status_code=status.HTTP_204_NO_CONTENT)
+def cancel_generation(runner: AIRunner = Depends(get_runner)):
+    """Stop the AI generation in progress (the request that started it answers `409 ai_cancelled`)."""
+    runner.cancel()
 
 
 # -------------------------------------------------------------- summary/notes

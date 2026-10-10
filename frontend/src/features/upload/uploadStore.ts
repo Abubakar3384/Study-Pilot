@@ -13,6 +13,7 @@ import {
 } from '../../domain/uploadPipeline'
 import { prefetchCanvas } from '../../graph/loadCanvas'
 import { trackGeneration, waitForIdle } from '../../data/generation'
+import { ApiError } from '../../api/errors'
 import { toast } from '../../ui/toast'
 
 interface UploadStore {
@@ -36,6 +37,7 @@ let navigateTo: ((to: string) => void) | null = null
 let uploadAbort: AbortController | null = null
 let generationAbort: AbortController | null = null
 const POLL_MS = 1500
+const stoppedError = () => new ApiError(0, 'ai_cancelled', 'Stopped. Retry when you’re ready.')
 
 export const useUpload = create<UploadStore>((set, get) => {
   const dispatch = (event: UploadEvent) => set((s) => ({ state: uploadReducer(s.state, event) }))
@@ -52,11 +54,12 @@ export const useUpload = create<UploadStore>((set, get) => {
     try {
       // One AI request at a time: wait for anything else (e.g. notes started elsewhere) to finish.
       await waitForIdle()
+      if (signal?.aborted) throw new DOMException('Stopped', 'AbortError')
       if (step === 'summary') {
-        const summary = await trackGeneration(doc.id, 'summary', () => studyApi.generateSummary(doc.id, signal))
+        const summary = await trackGeneration(doc.id, 'summary', (s) => studyApi.generateSummary(doc.id, s), signal)
         queryClient.setQueryData(qk.summary(doc.id), summary)
       } else {
-        const map = await trackGeneration(doc.id, 'concepts', () => studyApi.generateConcepts(doc.id, signal))
+        const map = await trackGeneration(doc.id, 'concepts', (s) => studyApi.generateConcepts(doc.id, s), signal)
         queryClient.setQueryData(qk.concepts(doc.id), map)
         if (current(session)) set({ graph: toKnowledgeGraph(map, doc.page_count) })
         // It forms here, on the dashboard; the document overview then shows it finished.
@@ -64,7 +67,15 @@ export const useUpload = create<UploadStore>((set, get) => {
       }
       if (current(session)) dispatch({ type: 'stepDone', step })
     } catch (error) {
-      if (error instanceof Error && error.name === 'AbortError') return
+      if (error instanceof Error && error.name === 'AbortError') {
+        // Stopped (here or from the indicator): don't start the queued step; offer Retry for both.
+        if (!current(session)) return
+        generationAbort?.abort()
+        for (const s of ['concepts', 'summary'] as const) {
+          if (get().state.steps[s] === 'active') dispatch({ type: 'stepFailed', step: s, error: stoppedError() })
+        }
+        return
+      }
       if (current(session)) dispatch({ type: 'stepFailed', step, error })
     }
   }
@@ -149,9 +160,8 @@ export const useUpload = create<UploadStore>((set, get) => {
         uploadAbort?.abort()
         dispatch({ type: 'cancelled' })
       } else if (phase === 'generating') {
+        // Stops the model on the server too; the steps then show "Stopped" with Retry.
         generationAbort?.abort()
-        dispatch({ type: 'stopWaiting' })
-        toast.info('Stopped waiting. If the server finishes, the results will appear in the document.')
       }
     },
 

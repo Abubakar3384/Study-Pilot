@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { offerQuiz, useAiJob } from '../../data/generation'
-import { BusyNote } from '../../app/GenerationIndicator'
+import { BusyNote, StopButton } from '../../app/GenerationIndicator'
 import { Link, useNavigate, useParams } from 'react-router'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Check, RotateCcw, Target, X } from 'lucide-react'
@@ -29,7 +29,7 @@ export default function QuizResultsPage() {
   const weak = perf?.topics.filter((t) => t.status === 'weak') ?? []
 
   const focused = useAiJob(doc.id, 'quiz', {
-    run: () => studyApi.generateQuiz(doc.id, 5, [...new Set(weak.flatMap((t) => t.concept.pages))]),
+    run: (_, signal) => studyApi.generateQuiz(doc.id, 5, [...new Set(weak.flatMap((t) => t.concept.pages))], signal),
     onSuccess: (q, _arg, { stillHere }) => {
       void qc.invalidateQueries({ queryKey: qk.quizzes(doc.id) })
       offerQuiz(doc.id, q.id, stillHere)
@@ -86,6 +86,7 @@ export default function QuizResultsPage() {
               New quiz on weak topics
             </Button>
           )}
+          {focused.isPending && <StopButton onStop={focused.stop} stopping={focused.stopping} />}
         </div>
       </header>
       <BusyNote job={focused.blockedBy} />

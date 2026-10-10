@@ -5,20 +5,25 @@ Retry policy (one attempt budget, `max_attempts`, shared by both failure kinds):
 - Non-retryable provider errors (bad request, auth): fail immediately.
 - Output that is not JSON, fails the schema, or cites pages that weren't supplied:
   re-ask with the validation error appended to the prompt.
+
+`cancel()` stops every generation in flight (the Stop button): no further attempts are made, and
+providers that stream (Ollama) close their connection, which makes the model stop working.
 """
 
 import json
 import logging
 import re
+import threading
 import time
 from collections.abc import Callable, Iterable
+from dataclasses import replace
 from typing import TypeVar
 
 from pydantic import ValidationError
 
-from app.ai.base import LLMProvider, LLMRequest, ProviderAuthError, ProviderError
+from app.ai.base import LLMProvider, LLMRequest, ProviderAuthError, ProviderCancelled, ProviderError
 from app.ai.schemas import _Out
-from app.errors import AINotConfiguredError, AIOutputError, AIUnavailableError
+from app.errors import AICancelledError, AINotConfiguredError, AIOutputError, AIUnavailableError
 
 log = logging.getLogger(__name__)
 
@@ -62,17 +67,43 @@ class AIRunner:
         self.max_attempts = max_attempts
         self.backoff_seconds = backoff_seconds
         self._sleep = sleep
+        self._active: set[threading.Event] = set()
+        self._active_lock = threading.Lock()
+
+    def cancel(self) -> int:
+        """Stop every generation in flight. Returns how many were running."""
+        with self._active_lock:
+            for event in self._active:
+                event.set()
+            return len(self._active)
 
     def generate(self, request: LLMRequest, output_model: type[T], valid_pages: Iterable[int]) -> T:
+        cancel = threading.Event()
+        with self._active_lock:
+            self._active.add(cancel)
+        try:
+            return self._generate(replace(request, cancel=cancel), output_model, valid_pages, cancel)
+        finally:
+            with self._active_lock:
+                self._active.discard(cancel)
+
+    def _generate(
+        self, request: LLMRequest, output_model: type[T], valid_pages: Iterable[int], cancel: threading.Event
+    ) -> T:
         allowed = set(valid_pages)
         last_problem = "unknown error"
         last_was_output_problem = False
         for attempt in range(1, self.max_attempts + 1):
+            if cancel.is_set():
+                raise AICancelledError("Generation was stopped.")
             try:
                 raw = self.provider.complete(request)
             except ProviderAuthError as exc:
                 log.error("AI provider auth failure: %s", exc)
                 raise AINotConfiguredError("The AI provider is not configured correctly.") from exc
+            except ProviderCancelled as exc:
+                log.info("AI generation stopped by the user")
+                raise AICancelledError("Generation was stopped.") from exc
             except ProviderError as exc:
                 last_problem, last_was_output_problem = str(exc), False
                 log.warning("AI provider error (attempt %d/%d): %s", attempt, self.max_attempts, exc)

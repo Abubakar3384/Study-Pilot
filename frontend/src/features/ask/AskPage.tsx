@@ -3,7 +3,7 @@ import { Link, useParams } from 'react-router'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAiJob } from '../../data/generation'
 import { appNavigate } from '../../app/navigator'
-import { BusyNote } from '../../app/GenerationIndicator'
+import { BusyNote, StopButton } from '../../app/GenerationIndicator'
 import { toast } from '../../ui/toast'
 import { m } from 'motion/react'
 import { ArrowUp, MessageSquarePlus, SearchX } from 'lucide-react'
@@ -39,7 +39,7 @@ export default function AskPage() {
 
   // The question in flight lives in the app-wide job tracker, so leaving and coming back keeps it.
   const send = useAiJob(doc.id, 'chat', {
-    run: (q: { text: string; conversationId?: string }) => chatApi.send(doc.id, q.text, q.conversationId),
+    run: (q: { text: string; conversationId?: string }, signal) => chatApi.send(doc.id, q.text, q.conversationId, signal),
     onSuccess: async (res, q, { stillHere }) => {
       // The thread is re-read from the server so it shows exactly what was stored.
       await qc.invalidateQueries({ queryKey: qk.conversation(doc.id, res.conversation_id) })
@@ -54,6 +54,7 @@ export default function AskPage() {
     },
     // Nothing was saved when sending failed: give the question back.
     onError: (_e, q) => setDraft((d) => d || q.text),
+    onStop: (q) => setDraft((d) => d || q.text),
   })
   // Only show the in-flight question (or its error) in the conversation it belongs to.
   const here = send.variables && send.variables.conversationId === conversationId
@@ -162,6 +163,7 @@ export default function AskPage() {
                       ))}
                     </span>
                     Searching the document…
+                    <StopButton onStop={send.stop} stopping={send.stopping} />
                   </li>
                 </>
               )}

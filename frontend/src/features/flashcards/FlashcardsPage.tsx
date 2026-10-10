@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useAiJob } from '../../data/generation'
-import { BusyNote } from '../../app/GenerationIndicator'
+import { BusyNote, StopButton } from '../../app/GenerationIndicator'
 import { Link, useSearchParams } from 'react-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { m } from 'motion/react'
@@ -25,7 +25,7 @@ export default function FlashcardsPage() {
   const cards = useQuery({ queryKey: qk.flashcards(doc.id, dueOnly), queryFn: ({ signal }) => studyApi.flashcards(doc.id, dueOnly, signal) })
   const qc = useQueryClient()
   const generate = useAiJob(doc.id, 'flashcards', {
-    run: (count: number) => studyApi.generateFlashcards(doc.id, count),
+    run: (count: number, signal) => studyApi.generateFlashcards(doc.id, count, signal),
     onSuccess: () => void qc.invalidateQueries({ queryKey: ['documents', doc.id, 'flashcards'] }),
   })
 
@@ -76,7 +76,12 @@ export default function FlashcardsPage() {
                     20 cards
                   </Button>
                 </div>
-                {generate.isPending && <ProgressBar label="Writing flashcards" className="w-64" />}
+                {generate.isPending && (
+                  <div className="flex items-center gap-3">
+                    <ProgressBar label="Writing flashcards" className="w-64" />
+                    <StopButton onStop={generate.stop} stopping={generate.stopping} />
+                  </div>
+                )}
                 <BusyNote job={generate.blockedBy} />
                 {generate.error ? <ErrorNotice error={generate.error} onRetry={() => generate.mutate(generate.variables ?? 10)} /> : null}
               </div>

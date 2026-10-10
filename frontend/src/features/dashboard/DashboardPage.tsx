@@ -1,6 +1,6 @@
 import { useEffect, useMemo } from 'react'
 import { useAiJob } from '../../data/generation'
-import { BusyNote } from '../../app/GenerationIndicator'
+import { BusyNote, StopButton } from '../../app/GenerationIndicator'
 import { Link } from 'react-router'
 import { useQueryClient } from '@tanstack/react-query'
 import { AnimatePresence, m } from 'motion/react'
@@ -200,7 +200,7 @@ function CanvasHeader({
 function BuildMapOverlay({ docId, pageCount, error }: { docId: string; pageCount: number; error: unknown }) {
   const qc = useQueryClient()
   const build = useAiJob(docId, 'concepts', {
-    run: () => studyApi.generateConcepts(docId),
+    run: (_, signal) => studyApi.generateConcepts(docId, signal),
     onSuccess: (map) => qc.setQueryData(qk.concepts(docId), map),
   })
   return (
@@ -214,6 +214,7 @@ function BuildMapOverlay({ docId, pageCount, error }: { docId: string; pageCount
       <Button variant="primary" busy={build.isPending} disabled={!!build.blockedBy} onClick={() => build.mutate()}>
         {build.isPending ? 'Building concept map…' : 'Build concept map'}
       </Button>
+      {build.isPending && <StopButton onStop={build.stop} stopping={build.stopping} />}
       <BusyNote job={build.blockedBy} />
     </div>
   )

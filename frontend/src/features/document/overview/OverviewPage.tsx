@@ -1,6 +1,6 @@
 import { useEffect, useMemo } from 'react'
 import { offerQuiz, useAiJob, type Job } from '../../../data/generation'
-import { BusyNote } from '../../../app/GenerationIndicator'
+import { BusyNote, StopButton } from '../../../app/GenerationIndicator'
 import { Link, useNavigate, useSearchParams } from 'react-router'
 import { useQueryClient } from '@tanstack/react-query'
 import { ArrowRight, BookOpenText, Layers, ListChecks, MessageSquareText, Network, Compass } from 'lucide-react'
@@ -38,11 +38,11 @@ export default function OverviewPage() {
   useConceptParam(store, knownIds)
 
   const build = useAiJob(doc.id, 'concepts', {
-    run: () => studyApi.generateConcepts(doc.id),
+    run: (_, signal) => studyApi.generateConcepts(doc.id, signal),
     onSuccess: (m) => qc.setQueryData(qk.concepts(doc.id), m),
   })
   const quiz = useAiJob(doc.id, 'quiz', {
-    run: (c: Concept) => studyApi.generateQuiz(doc.id, 5, c.pages),
+    run: (c: Concept, signal) => studyApi.generateQuiz(doc.id, 5, c.pages, signal),
     onSuccess: (q, _c, { stillHere }) => {
       void qc.invalidateQueries({ queryKey: qk.quizzes(doc.id) })
       offerQuiz(doc.id, q.id, stillHere)
@@ -82,6 +82,7 @@ export default function OverviewPage() {
               error={build.error ?? map.error}
               pageCount={doc.page_count}
               onBuild={() => build.mutate()}
+              onStop={build.stop}
             />
           }
         />
@@ -108,7 +109,9 @@ function BuildMap({
   error,
   pageCount,
   onBuild,
+  onStop,
 }: {
+  onStop: () => void
   loading: boolean
   pending: boolean
   blockedBy?: Job
@@ -135,7 +138,10 @@ function BuildMap({
           : `Map the key concepts in these ${pageCount} pages, where each appears, and how they connect.`}
       </p>
       {pending ? (
-        <ProgressBar label="Building concept map" className="mt-1" />
+        <div className="mt-1 flex w-full items-center gap-3">
+          <ProgressBar label="Building concept map" className="flex-1" />
+          <StopButton onStop={onStop} />
+        </div>
       ) : (
         <>
           <Button variant="primary" disabled={!!blockedBy} onClick={onBuild}>
@@ -153,7 +159,7 @@ function SummarySection({ docId }: { docId: string }) {
   const summary = useSummary(docId)
   const qc = useQueryClient()
   const generate = useAiJob(docId, 'summary', {
-    run: () => studyApi.generateSummary(docId),
+    run: (_, signal) => studyApi.generateSummary(docId, signal),
     onSuccess: (s) => qc.setQueryData(qk.summary(docId), s),
   })
 
@@ -190,7 +196,12 @@ function SummarySection({ docId }: { docId: string }) {
           <Button variant="primary" busy={generate.isPending} disabled={!!generate.blockedBy} onClick={() => generate.mutate()}>
             {generate.isPending ? 'Writing summary…' : 'Generate summary'}
           </Button>
-          {generate.isPending && <ProgressBar label="Writing summary" />}
+          {generate.isPending && (
+            <div className="flex items-center gap-3">
+              <ProgressBar label="Writing summary" className="flex-1" />
+              <StopButton onStop={generate.stop} stopping={generate.stopping} />
+            </div>
+          )}
           <BusyNote job={generate.blockedBy} />
           {generate.error ? <ErrorNotice error={generate.error} onRetry={() => generate.mutate()} className="w-full" /> : null}
         </div>

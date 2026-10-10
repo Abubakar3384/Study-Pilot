@@ -10,7 +10,8 @@ export const studyApi = {
     api<SummaryDto>(`/documents/${docId}/summary`, { method: 'POST', signal }),
 
   notes: (docId: string, signal?: AbortSignal) => api<NotesDto>(`/documents/${docId}/notes`, { signal }),
-  generateNotes: (docId: string) => api<NotesDto>(`/documents/${docId}/notes`, { method: 'POST' }),
+  generateNotes: (docId: string, signal?: AbortSignal) =>
+    api<NotesDto>(`/documents/${docId}/notes`, { method: 'POST', signal }),
   saveNotes: (docId: string, notes: NotesEditDto) =>
     api<NotesDto>(`/documents/${docId}/notes`, { method: 'PUT', body: notes }),
 
@@ -22,9 +23,10 @@ export const studyApi = {
     api<{ items: QuizDto[] }>(`/documents/${docId}/quizzes`, { signal }).then((r) => r.items),
   quiz: (quizId: string, signal?: AbortSignal) => api<QuizDto>(`/quizzes/${quizId}`, { signal }),
   /** `pages` focuses the quiz on those pages (and their neighbours), e.g. one concept's sources. */
-  generateQuiz: (docId: string, numQuestions: number, pages?: number[]) =>
+  generateQuiz: (docId: string, numQuestions: number, pages?: number[], signal?: AbortSignal) =>
     api<QuizDto>(`/documents/${docId}/quizzes`, {
       method: 'POST',
+      signal,
       body: { num_questions: numQuestions, ...(pages?.length ? { pages } : {}) },
     }),
   checkAnswer: (quizId: string, questionId: string, selectedIndex: number | null) =>
@@ -41,8 +43,8 @@ export const studyApi = {
     api<{ items: FlashcardDto[] }>(`/documents/${docId}/flashcards${dueOnly ? '?due=true' : ''}`, { signal }).then(
       (r) => r.items,
     ),
-  generateFlashcards: (docId: string, count: number) =>
-    api<{ items: FlashcardDto[] }>(`/documents/${docId}/flashcards`, { method: 'POST', body: { count } }).then(
+  generateFlashcards: (docId: string, count: number, signal?: AbortSignal) =>
+    api<{ items: FlashcardDto[] }>(`/documents/${docId}/flashcards`, { method: 'POST', body: { count }, signal }).then(
       (r) => r.items,
     ),
   review: (cardId: string, rating: ReviewRating) =>

@@ -52,6 +52,13 @@ class AINotConfiguredError(AppError):
     code = "ai_not_configured"
 
 
+class AICancelledError(AppError):
+    """The student stopped the generation."""
+
+    status_code = 409
+    code = "ai_cancelled"
+
+
 class AIOutputError(AppError):
     """The model kept returning output that failed validation."""
 

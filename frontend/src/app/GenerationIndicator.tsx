@@ -1,11 +1,13 @@
 import { Link } from 'react-router'
 import { AnimatePresence, m } from 'motion/react'
-import { Loader2 } from 'lucide-react'
+import { Loader2, Square } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
 import { qk } from '../api/queryKeys'
 import type { DocumentDto } from '../api/types'
 import { documentTitle } from '../data/format'
-import { KIND_LABEL, useRunningJob, type GenKind } from '../data/generation'
+import { KIND_LABEL, stopGeneration, useRunningJob, type GenKind } from '../data/generation'
+import { Button } from '../ui/Button'
+import { cn } from '../ui/cn'
 import { t } from '../motion/variants'
 
 const TAB: Record<GenKind, string> = {
@@ -33,20 +35,45 @@ export function GenerationIndicator() {
             exit={{ opacity: 0, transition: t.exit }}
             className="pointer-events-auto"
           >
-            <Link
-              to={`/d/${job.docId}${TAB[job.kind]}`}
-              className="flex items-center gap-2.5 rounded-full border border-line bg-surface-1 py-2 pr-4 pl-3 text-sm shadow-[var(--card-shadow)]"
-            >
-              <Loader2 className="size-4 text-signal motion-safe:animate-spin" aria-hidden />
-              <span>
-                Generating {KIND_LABEL[job.kind]}
-                {doc ? <span className="text-text-3"> · {documentTitle(doc)}</span> : null}
-              </span>
-            </Link>
+            <div className="flex items-center rounded-full border border-line bg-surface-1 text-sm shadow-[var(--card-shadow)]">
+              <Link to={`/d/${job.docId}${TAB[job.kind]}`} className="flex items-center gap-2.5 rounded-l-full py-2 pr-3 pl-3">
+                <Loader2 className="size-4 text-signal motion-safe:animate-spin" aria-hidden />
+                <span>
+                  {job.stopping ? 'Stopping' : 'Generating'} {KIND_LABEL[job.kind]}
+                  {doc ? <span className="text-text-3"> · {documentTitle(doc)}</span> : null}
+                </span>
+              </Link>
+              <button
+                type="button"
+                onClick={() => stopGeneration(job.docId, job.kind)}
+                disabled={job.stopping}
+                aria-label={`Stop generating ${KIND_LABEL[job.kind]}`}
+                className="flex items-center gap-1.5 rounded-r-full border-l border-line py-2 pr-4 pl-3 font-medium text-text-2 transition-colors hover:text-incorrect disabled:opacity-50"
+              >
+                <Square className="size-3 fill-current" aria-hidden />
+                Stop
+              </button>
+            </div>
           </m.div>
         )}
       </AnimatePresence>
     </div>
+  )
+}
+
+/** Stops the job a screen is showing as in progress. */
+export function StopButton({ onStop, stopping, className }: { onStop: () => void; stopping?: boolean; className?: string }) {
+  return (
+    <Button
+      size="sm"
+      variant="ghost"
+      className={cn('text-text-2 hover:text-incorrect', className)}
+      icon={<Square className="size-3 fill-current" />}
+      disabled={stopping}
+      onClick={onStop}
+    >
+      {stopping ? 'Stopping…' : 'Stop'}
+    </Button>
   )
 }
 

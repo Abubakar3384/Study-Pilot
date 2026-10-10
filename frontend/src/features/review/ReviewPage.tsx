@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { offerQuiz, useAiJob } from '../../data/generation'
-import { BusyNote } from '../../app/GenerationIndicator'
+import { BusyNote, StopButton } from '../../app/GenerationIndicator'
 import { Link } from 'react-router'
 import { useQueries, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ArrowRight, Target } from 'lucide-react'
@@ -46,7 +46,7 @@ export default function ReviewPage() {
   const other = perf?.topics.filter((t) => t.status === 'mixed' || t.status === 'few') ?? []
 
   const focused = useAiJob(doc.id, 'quiz', {
-    run: () => studyApi.generateQuiz(doc.id, 5, [...new Set(weak.flatMap((t) => t.concept.pages))]),
+    run: (_, signal) => studyApi.generateQuiz(doc.id, 5, [...new Set(weak.flatMap((t) => t.concept.pages))], signal),
     onSuccess: (q, _arg, { stillHere }) => {
       void qc.invalidateQueries({ queryKey: qk.quizzes(doc.id) })
       offerQuiz(doc.id, q.id, stillHere)
@@ -109,6 +109,7 @@ export default function ReviewPage() {
             <Button className="mt-3" variant="primary" busy={focused.isPending} disabled={!!focused.blockedBy} onClick={() => focused.mutate()}>
               Quiz me on weak concepts
             </Button>
+            {focused.isPending && <StopButton className="mt-3 ml-2" onStop={focused.stop} stopping={focused.stopping} />}
             <BusyNote job={focused.blockedBy} className="mt-2 text-sm text-text-3" />
             {focused.error ? <ErrorNotice className="mt-3" error={focused.error} onRetry={() => focused.mutate()} /> : null}
           </>

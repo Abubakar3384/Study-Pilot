@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { Link } from 'react-router'
 import { m } from 'motion/react'
-import { AlertTriangle, ArrowRight, Check, Circle, Loader2, RotateCcw, Upload, X } from 'lucide-react'
+import { AlertTriangle, ArrowRight, Check, Circle, Loader2, RotateCcw, Square, Upload, X } from 'lucide-react'
 import { describeError } from '../../api/errors'
 import { documentTitle, formatBytes } from '../../data/format'
 import type { StepStatus } from '../../domain/uploadPipeline'
@@ -151,9 +151,9 @@ export function UploadPanel() {
             Cancel
           </Button>
         )}
-        {phase === 'generating' && !state.stoppedWaiting && (
-          <Button variant="ghost" onClick={cancel}>
-            Stop waiting
+        {phase === 'generating' && (
+          <Button variant="ghost" icon={<Square className="size-3 fill-current" />} onClick={cancel}>
+            Stop generating
           </Button>
         )}
         {(phase === 'ready' || phase === 'failed' || phase === 'cancelled') && (

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useAiJob } from '../../data/generation'
-import { BusyNote } from '../../app/GenerationIndicator'
+import { BusyNote, StopButton } from '../../app/GenerationIndicator'
 import { useSearchParams } from 'react-router'
 import { useQueryClient } from '@tanstack/react-query'
 import { BookOpenText, Check, Pencil, RefreshCw } from 'lucide-react'
@@ -24,7 +24,7 @@ export default function NotesPage() {
   const [editing, setEditing] = useState(false)
   const [confirmRegen, setConfirmRegen] = useState(false)
   const generate = useAiJob(doc.id, 'notes', {
-    run: () => studyApi.generateNotes(doc.id),
+    run: (_, signal) => studyApi.generateNotes(doc.id, signal),
     onSuccess: (n) => {
       qc.setQueryData(qk.notes(doc.id), n)
       setConfirmRegen(false)
@@ -52,7 +52,12 @@ export default function NotesPage() {
               <Button variant="primary" busy={generate.isPending} disabled={!!generate.blockedBy} onClick={() => generate.mutate()}>
                 {generate.isPending ? 'Writing notes…' : 'Generate notes'}
               </Button>
-              {generate.isPending && <ProgressBar label="Writing notes" className="max-w-sm" />}
+              {generate.isPending && (
+                <div className="flex w-full max-w-sm items-center gap-3">
+                  <ProgressBar label="Writing notes" className="flex-1" />
+                  <StopButton onStop={generate.stop} stopping={generate.stopping} />
+                </div>
+              )}
               <BusyNote job={generate.blockedBy} />
               {generate.error ? <ErrorNotice error={generate.error} onRetry={() => generate.mutate()} className="w-full" /> : null}
             </div>
@@ -72,6 +77,7 @@ export default function NotesPage() {
       setConfirmRegen={setConfirmRegen}
       regenerate={() => generate.mutate()}
       regenerating={generate.isPending}
+      stopRegenerate={generate.stop}
       regenerateError={generate.error}
     />
   )
@@ -85,6 +91,7 @@ function NotesView({
   setConfirmRegen,
   regenerate,
   regenerating,
+  stopRegenerate,
   regenerateError,
 }: {
   notes: NotesDto
@@ -94,6 +101,7 @@ function NotesView({
   setConfirmRegen: (v: boolean) => void
   regenerate: () => void
   regenerating: boolean
+  stopRegenerate: () => void
   regenerateError: unknown
 }) {
   const { doc } = useDocumentContext()
@@ -188,9 +196,13 @@ function NotesView({
               <Button size="sm" variant="primary" busy={regenerating} onClick={regenerate}>
                 Regenerate
               </Button>
-              <Button size="sm" variant="ghost" onClick={() => setConfirmRegen(false)} disabled={regenerating}>
-                Cancel
-              </Button>
+              {regenerating ? (
+                <StopButton onStop={stopRegenerate} />
+              ) : (
+                <Button size="sm" variant="ghost" onClick={() => setConfirmRegen(false)}>
+                  Cancel
+                </Button>
+              )}
             </div>
             {regenerateError ? <ErrorNotice className="mt-3" error={regenerateError} onRetry={regenerate} /> : null}
           </div>
