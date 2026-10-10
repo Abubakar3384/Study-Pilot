@@ -112,7 +112,7 @@ export function UploadPanel() {
             steps.concepts === 'active'
               ? state.stoppedWaiting
                 ? 'Stopped waiting. The server may still finish.'
-                : 'Finding key concepts and how they connect. This can take up to a minute.'
+                : 'Finding key concepts and how they connect. This can take a few minutes with a local model.'
               : steps.concepts === 'failed'
                 ? describeError(errors.concepts)
                 : undefined

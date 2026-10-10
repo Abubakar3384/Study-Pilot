@@ -125,7 +125,7 @@ function BuildMap({
       <h2 className="text-md font-semibold">{pending ? 'Building concept map…' : 'No concept map yet'}</h2>
       <p className="text-base text-text-2">
         {pending
-          ? 'Finding the key concepts across the pages and how they connect. This can take up to a minute.'
+          ? 'Finding the key concepts across the pages and how they connect. This can take a few minutes with a local model.'
           : `Map the key concepts in these ${pageCount} pages, where each appears, and how they connect.`}
       </p>
       {pending ? (

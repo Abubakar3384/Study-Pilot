@@ -35,6 +35,7 @@ def create_app(settings: Settings | None = None, provider: LLMProvider | None = 
     app.state.settings = settings
     app.state.engine = engine
     app.state.session_factory = make_session_factory(engine)
+    log.info("AI provider: %s%s", provider.name, f" ({provider.model})" if getattr(provider, "model", None) else "")
     app.state.runner = AIRunner(provider, settings.ai_max_attempts, settings.ai_retry_backoff_seconds)
 
     app.add_middleware(
@@ -61,7 +62,10 @@ def create_app(settings: Settings | None = None, provider: LLMProvider | None = 
 
     @app.get("/api/health", tags=["meta"])
     def health():
-        return {"status": "ok", "ai_provider": provider.name}
+        body = {"status": "ok", "ai_provider": provider.name}
+        if getattr(provider, "model", None):
+            body["ai_model"] = provider.model
+        return body
 
     app.include_router(documents.router)
     app.include_router(study.router)

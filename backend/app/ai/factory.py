@@ -1,6 +1,7 @@
 from app.ai.anthropic import AnthropicProvider
 from app.ai.base import LLMProvider
 from app.ai.mock import MockProvider
+from app.ai.ollama import OllamaProvider
 from app.config import Settings
 
 
@@ -15,6 +16,13 @@ def build_provider(settings: Settings) -> LLMProvider:
             api_key=key,
             model=settings.anthropic_model,
             base_url=settings.anthropic_base_url,
+            timeout=settings.ai_timeout_seconds,
+        )
+    if settings.ai_provider == "ollama":
+        return OllamaProvider(
+            model=settings.ollama_model,
+            base_url=settings.ollama_base_url,
+            num_ctx=settings.ollama_num_ctx,
             timeout=settings.ai_timeout_seconds,
         )
     raise RuntimeError(f"Unsupported AI_PROVIDER {settings.ai_provider!r}")

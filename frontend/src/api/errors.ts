@@ -33,6 +33,8 @@ const SERVER_COPY = new Set(['invalid_request', 'invalid_pdf', 'file_too_large',
 export function describeError(err: unknown): string {
   if (err instanceof ApiError) {
     if (SERVER_COPY.has(err.code)) return err.message
+    // Local-model problems come with an actionable server message ("start Ollama", "run ollama pull").
+    if (err.code === 'ai_unavailable' && /ollama/i.test(err.message)) return err.message.replace(/^.*?(?:rejected the request|attempts): /, '')
     return FRIENDLY[err.code] ?? err.message
   }
   if (err instanceof Error && err.name === 'AbortError') return 'Cancelled.'

@@ -50,6 +50,33 @@ ANTHROPIC_API_KEY=your-key-here
 
 With `AI_PROVIDER=anthropic` and no key, the server refuses to start and gives a clear error.
 
+### Run with a local model (Ollama, free)
+
+1. Install Ollama from https://ollama.com and pull the model (once):
+   ```powershell
+   ollama pull llama3.1:8b
+   ```
+   Keep Ollama running (the Ollama app in the tray, or `ollama serve`).
+2. In `backend/.env` set:
+   ```
+   AI_PROVIDER=ollama
+   AI_TIMEOUT_SECONDS=300
+   ```
+   `OLLAMA_BASE_URL` (default `http://localhost:11434`), `OLLAMA_MODEL` (default `llama3.1:8b`)
+   and `OLLAMA_NUM_CTX` (default `8192`) can be changed there too.
+3. Start the backend as usual. `GET /api/health` should report
+   `{"ai_provider": "ollama", "ai_model": "llama3.1:8b"}`.
+
+Notes:
+- The backend sends only as much of the PDF as fits in the model's context window
+  (`OLLAMA_NUM_CTX`), so very long documents are sampled. Raise it (e.g. `16384`) if you have the RAM.
+- Requests use Ollama's JSON mode, and every reply is still validated. When a small model returns
+  something invalid (a quiz with 3 options, a page that doesn't exist), the backend re-asks it, and
+  nothing invalid is ever saved. Expect slower generation and an occasional Retry.
+- If Ollama isn't running, or the model isn't pulled, the app shows a message saying so.
+
+Deployments: leave `AI_PROVIDER` unset (or `mock`) and the app runs on the offline mock provider.
+
 ## Test
 
 ```powershell
@@ -84,6 +111,7 @@ backend/
       prompts.py         prompt builders (document text is treated as data)
       mock.py            configurable offline provider
       anthropic.py       Anthropic Messages API over httpx
+      ollama.py          local models through Ollama's /api/chat (JSON mode)
       factory.py         picks a provider from settings
     db/
       database.py        engine/session, SQLite pragmas, UTC datetimes

@@ -46,4 +46,11 @@ describe('describeError', () => {
       'The uploaded file is not a PDF.',
     )
   })
+
+  it('passes through actionable Ollama messages without the runner prefix', () => {
+    const missing = new ApiError(503, 'ai_unavailable', "The AI provider rejected the request: Ollama has no model 'llama3.1:8b'. Run `ollama pull llama3.1:8b` first.")
+    expect(describeError(missing)).toBe("Ollama has no model 'llama3.1:8b'. Run `ollama pull llama3.1:8b` first.")
+    const down = new ApiError(503, 'ai_unavailable', 'AI provider failed after 3 attempts: Ollama is not reachable at http://localhost:11434. Start it.')
+    expect(describeError(down)).toMatch(/^Ollama is not reachable/)
+  })
 })
