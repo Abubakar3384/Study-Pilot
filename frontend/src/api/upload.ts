@@ -42,7 +42,8 @@ export function uploadDocument(
   })
 }
 
-export const MAX_UPLOAD_MB = 25
+/** Matches the server's MAX_UPLOAD_MB (4 MB on Vercel, whose functions accept at most 4.5 MB). */
+export const MAX_UPLOAD_MB = Number(import.meta.env.VITE_MAX_UPLOAD_MB) || 25
 
 /** Fast client-side checks; the server re-validates everything (signature, size, readability). */
 export function precheckFile(file: File): string | null {

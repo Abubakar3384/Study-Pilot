@@ -3,6 +3,7 @@
 Secrets such as ANTHROPIC_API_KEY live only here on the server; no route ever returns them.
 """
 
+import os
 from functools import cached_property
 from pathlib import Path
 from typing import Literal
@@ -11,13 +12,20 @@ from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
+# On Vercel the code directory is read-only and only /tmp is writable. /tmp belongs to one function
+# instance and is wiped when it shuts down, so set DATABASE_URL to a hosted database to keep data.
+ON_VERCEL = bool(os.environ.get("VERCEL"))
+_DATA = "/tmp/studypilot" if ON_VERCEL else "./data"
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
     # Storage
-    database_url: str = "sqlite:///./data/studypilot.db"
-    upload_dir: Path = Path("./data/uploads")
-    max_upload_mb: int = Field(default=25, ge=1)
+    database_url: str = f"sqlite:///{_DATA}/studypilot.db"
+    upload_dir: Path = Path(f"{_DATA}/uploads")
+    # Vercel Functions accept request bodies up to 4.5 MB.
+    max_upload_mb: int = Field(default=4 if ON_VERCEL else 25, ge=1)
     max_pages: int = Field(default=500, ge=1)
     min_extracted_chars: int = Field(default=20, ge=0)
 
