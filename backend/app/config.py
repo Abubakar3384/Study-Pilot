@@ -31,6 +31,11 @@ class Settings(BaseSettings):
     ollama_base_url: str = "http://localhost:11434"
     ollama_model: str = "llama3.1:8b"
     ollama_num_ctx: int = Field(default=8192, ge=2048)
+    # Local models run on a laptop: smaller prompts and replies keep each request to a few minutes.
+    ollama_max_context_chars: int = Field(default=8_000, ge=2_000)
+    ollama_num_predict: int = Field(default=2048, ge=256)
+    # Longest silence tolerated from Ollama (the reply is streamed), separate from the cloud timeout.
+    ollama_timeout_seconds: float = Field(default=600.0, gt=0)
     ai_timeout_seconds: float = Field(default=60.0, gt=0)
     ai_max_attempts: int = Field(default=3, ge=1, le=10)
     ai_retry_backoff_seconds: float = Field(default=1.0, ge=0)
@@ -60,8 +65,8 @@ class Settings(BaseSettings):
         so the document budget is what's left after the reply and the instructions (~3.5 chars per token).
         """
         if self.ai_provider == "ollama":
-            fits = int((self.ollama_num_ctx - self.ai_max_tokens - 800) * 3.5)
-            return max(2_000, min(self.ai_max_context_chars, fits))
+            fits = int((self.ollama_num_ctx - self.ollama_num_predict - 800) * 3.5)
+            return max(2_000, min(self.ollama_max_context_chars, fits))
         return self.ai_max_context_chars
 
     @property

@@ -60,10 +60,10 @@ With `AI_PROVIDER=anthropic` and no key, the server refuses to start and gives a
 2. In `backend/.env` set:
    ```
    AI_PROVIDER=ollama
-   AI_TIMEOUT_SECONDS=300
    ```
-   `OLLAMA_BASE_URL` (default `http://localhost:11434`), `OLLAMA_MODEL` (default `llama3.1:8b`)
-   and `OLLAMA_NUM_CTX` (default `8192`) can be changed there too.
+   Optional, in the same file: `OLLAMA_BASE_URL` (default `http://localhost:11434`), `OLLAMA_MODEL`
+   (`llama3.1:8b`), `OLLAMA_NUM_CTX` (`8192`), `OLLAMA_MAX_CONTEXT_CHARS` (`8000`),
+   `OLLAMA_NUM_PREDICT` (`2048`) and `OLLAMA_TIMEOUT_SECONDS` (`600`).
 3. Start the backend as usual. `GET /api/health` should report
    `{"ai_provider": "ollama", "ai_model": "llama3.1:8b"}`.
 
@@ -74,6 +74,10 @@ Notes:
   something invalid (a quiz with 3 options, a page that doesn't exist), the backend re-asks it, and
   nothing invalid is ever saved. Expect slower generation and an occasional Retry.
 - If Ollama isn't running, or the model isn't pulled, the app shows a message saying so.
+- Replies are streamed and requests are sent to Ollama one at a time, so a slow but working model
+  doesn't time out. If generation is still too slow, check `ollama ps`: "100% GPU" is fast,
+  "CPU" is slow. On CPU, lower `OLLAMA_MAX_CONTEXT_CHARS` (e.g. `5000`) or use a smaller model
+  such as `llama3.2:3b`.
 
 Deployments: leave `AI_PROVIDER` unset (or `mock`) and the app runs on the offline mock provider.
 

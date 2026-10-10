@@ -23,7 +23,14 @@ def provider_with(handler, **kw) -> OllamaProvider:
 
 
 def chat_reply(content: str) -> httpx.Response:
-    return httpx.Response(200, json={"model": "llama3.1:8b", "message": {"role": "assistant", "content": content}, "done": True})
+    """A streamed /api/chat reply: NDJSON lines with partial content, then a final done line."""
+    half = len(content) // 2
+    lines = [
+        {"model": "llama3.1:8b", "message": {"role": "assistant", "content": content[:half]}, "done": False},
+        {"model": "llama3.1:8b", "message": {"role": "assistant", "content": content[half:]}, "done": False},
+        {"model": "llama3.1:8b", "message": {"role": "assistant", "content": ""}, "done": True},
+    ]
+    return httpx.Response(200, content="\n".join(json.dumps(x) for x in lines).encode())
 
 
 def test_sends_json_mode_context_window_and_system_prompt():
@@ -37,7 +44,7 @@ def test_sends_json_mode_context_window_and_system_prompt():
     assert provider_with(handler, num_ctx=16384).complete(request()) == '{"ok": true}'
     body = seen["body"]
     assert seen["url"] == "http://localhost:11434/api/chat"
-    assert body["model"] == "llama3.1:8b" and body["stream"] is False and body["format"] == "json"
+    assert body["model"] == "llama3.1:8b" and body["stream"] is True and body["format"] == "json"
     assert body["options"]["num_ctx"] == 16384 and body["options"]["num_predict"] == 1000
     assert body["messages"][0] == {"role": "system", "content": "system rules"}
     assert body["messages"][1]["content"] == "summarise this"
@@ -65,7 +72,7 @@ def test_timeout_fails_fast_instead_of_retrying():
 
     with pytest.raises(ProviderError) as e:
         provider_with(handler).complete(request())
-    assert not e.value.retryable and "AI_TIMEOUT_SECONDS" in str(e.value)
+    assert not e.value.retryable and "OLLAMA_TIMEOUT_SECONDS" in str(e.value)
 
 
 def test_empty_reply_and_server_errors_are_retryable():
@@ -96,11 +103,46 @@ def test_factory_and_context_budget(tmp_path):
     s = Settings(_env_file=None, ai_provider="ollama", database_url=f"sqlite:///{tmp_path.as_posix()}/x.db")
     p = build_provider(s)
     assert isinstance(p, OllamaProvider) and p.model == "llama3.1:8b" and p.num_ctx == 8192
-    # Prompt + reply must fit in num_ctx; the document budget shrinks accordingly...
-    assert s.context_chars == int((8192 - 4096 - 800) * 3.5)
-    # ...grows with a bigger window, and other providers keep the configured budget.
-    assert Settings(_env_file=None, ai_provider="ollama", ollama_num_ctx=32768).context_chars == 60_000
+    assert p.num_predict == 2048 and p.timeout == 600
+    # Local models get a small document budget by default...
+    assert s.context_chars == 8_000
+    # ...which never exceeds what fits in the window next to the reply...
+    tight = Settings(_env_file=None, ai_provider="ollama", ollama_num_ctx=4096, ollama_max_context_chars=20_000)
+    assert tight.context_chars == int((4096 - 2048 - 800) * 3.5)
+    # ...and other providers keep the configured budget.
     assert Settings(_env_file=None, ai_provider="mock").context_chars == 60_000
+
+
+def test_requests_are_sent_one_at_a_time():
+    import threading
+    import time
+
+    active = {"now": 0, "max": 0}
+    guard = threading.Lock()
+
+    def handler(req):
+        with guard:
+            active["now"] += 1
+            active["max"] = max(active["max"], active["now"])
+        time.sleep(0.05)
+        with guard:
+            active["now"] -= 1
+        return chat_reply('{"ok": true}')
+
+    p = provider_with(handler)
+    threads = [threading.Thread(target=p.complete, args=(request(),)) for _ in range(3)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+    assert active["max"] == 1
+
+
+def test_error_inside_the_stream_is_reported():
+    line = json.dumps({"error": "model ran out of memory"}).encode()
+    with pytest.raises(ProviderError) as e:
+        provider_with(lambda r: httpx.Response(200, content=line)).complete(request())
+    assert "out of memory" in str(e.value)
 
 
 def test_health_reports_provider_and_model(make_client):

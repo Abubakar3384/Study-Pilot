@@ -23,6 +23,7 @@ def build_provider(settings: Settings) -> LLMProvider:
             model=settings.ollama_model,
             base_url=settings.ollama_base_url,
             num_ctx=settings.ollama_num_ctx,
-            timeout=settings.ai_timeout_seconds,
+            num_predict=settings.ollama_num_predict,
+            timeout=settings.ollama_timeout_seconds,
         )
     raise RuntimeError(f"Unsupported AI_PROVIDER {settings.ai_provider!r}")
