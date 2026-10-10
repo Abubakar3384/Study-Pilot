@@ -1,0 +1,258 @@
+@import 'tailwindcss';
+
+/* Only StudyPilot tokens exist: Tailwind's default palette, shadows and blur are removed on purpose. */
+@theme {
+  --color-*: initial;
+  --shadow-*: initial;
+  --inset-shadow-*: initial;
+  --drop-shadow-*: initial;
+  --blur-*: initial;
+
+  --color-ink: #0c0f14;
+  --color-surface-1: #12161d;
+  --color-surface-2: #181d26;
+  --color-line: #252c37;
+  --color-line-strong: #343d4b;
+  --color-text: #e7eaee;
+  --color-text-2: #a3acb9;
+  --color-text-3: #7d8796;
+  --color-signal: #6cc4dc;
+  --color-amber: #e9b44c;
+  --color-correct: #5dbb8a;
+  --color-incorrect: #e4705f;
+
+  --font-sans: 'Instrument Sans Variable', ui-sans-serif, system-ui, sans-serif;
+  --font-serif: 'Source Serif 4 Variable', 'Iowan Old Style', Georgia, serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, 'Cascadia Mono', monospace;
+
+  --text-xs: 0.75rem;
+  --text-xs--line-height: 1rem;
+  --text-sm: 0.8125rem;
+  --text-sm--line-height: 1.25rem;
+  --text-base: 0.875rem;
+  --text-base--line-height: 1.375rem;
+  --text-md: 1rem;
+  --text-md--line-height: 1.5rem;
+  --text-lg: 1.125rem;
+  --text-lg--line-height: 1.75rem;
+  --text-xl: 1.375rem;
+  --text-xl--line-height: 1.875rem;
+  --text-2xl: 1.75rem;
+  --text-2xl--line-height: 2.25rem;
+  --text-3xl: 2.25rem;
+  --text-3xl--line-height: 2.625rem;
+
+  --radius-sm: 4px;
+  --radius-md: 6px;
+
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-enter: cubic-bezier(0.05, 0.7, 0.1, 1);
+  --ease-exit: cubic-bezier(0.3, 0, 0.8, 0.15);
+}
+
+@layer base {
+  :root {
+    color-scheme: dark;
+    background: var(--color-ink);
+    color: var(--color-text);
+    font-family: var(--font-sans);
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    min-height: 100dvh;
+    background: var(--color-ink);
+    font-size: var(--text-base);
+    line-height: var(--text-base--line-height);
+  }
+
+  ::selection {
+    background: color-mix(in srgb, var(--color-signal) 30%, transparent);
+    color: var(--color-text);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-signal);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+
+  button,
+  [role='button'] {
+    cursor: pointer;
+  }
+
+  button:disabled {
+    cursor: not-allowed;
+  }
+
+  dialog::backdrop {
+    background: color-mix(in srgb, var(--color-ink) 72%, transparent);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 1ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 1ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@layer components {
+  /* Long-form reading surface: notes, summaries, answers, page text. */
+  .reading {
+    font-family: var(--font-serif);
+    font-size: 1.125rem;
+    line-height: 1.65;
+    font-optical-sizing: auto;
+    max-width: 68ch;
+    color: var(--color-text);
+  }
+  .reading p + p {
+    margin-top: 0.9em;
+  }
+  .reading code {
+    font-family: var(--font-mono);
+    font-size: 0.85em;
+    padding: 0.1em 0.3em;
+    border-radius: var(--radius-sm);
+    background: var(--color-surface-2);
+  }
+  .reading pre {
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+    line-height: 1.6;
+    padding: 0.875rem 1rem;
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-md);
+    background: var(--color-surface-1);
+    overflow-x: auto;
+  }
+
+  /* Small uppercase mono label used for metadata and section eyebrows. */
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-text-3);
+  }
+
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@utility tint-signal {
+  background-color: color-mix(in srgb, var(--color-signal) 12%, transparent);
+}
+@utility tint-amber {
+  background-color: color-mix(in srgb, var(--color-amber) 12%, transparent);
+}
+@utility tint-correct {
+  background-color: color-mix(in srgb, var(--color-correct) 12%, transparent);
+}
+@utility tint-incorrect {
+  background-color: color-mix(in srgb, var(--color-incorrect) 12%, transparent);
+}
+
+@keyframes indeterminate {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(300%);
+  }
+}
+
+/* ---------- Knowledge canvas: DOM labels over the 3D scene (positioned imperatively) ---------- */
+.kc-label {
+  color: var(--color-text);
+  background: color-mix(in srgb, var(--color-ink) 82%, transparent);
+  opacity: 0;
+  transition: opacity 150ms var(--ease-standard), color 150ms var(--ease-standard);
+  will-change: transform;
+}
+.kc-label[data-state='shown'] {
+  opacity: 1;
+}
+.kc-label[data-state='dim'] {
+  opacity: 0.45;
+}
+.kc-label[data-state='selected'] {
+  opacity: 1;
+  color: var(--color-signal);
+  outline: 1px solid color-mix(in srgb, var(--color-signal) 55%, transparent);
+}
+
+/* ---------- 2D concept map (fallback / placeholder) ---------- */
+@media (prefers-reduced-motion: no-preference) {
+  .kc2-pop {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: kc2-pop 600ms var(--ease-enter) both;
+  }
+  .kc2-draw {
+    stroke-dasharray: 1;
+    animation: kc2-draw 360ms var(--ease-standard) both;
+  }
+  .kc2-rise {
+    animation: kc2-rise 700ms var(--ease-enter) both;
+  }
+  .kc2-scan {
+    animation: kc2-scan 1.6s ease-in-out infinite;
+  }
+}
+@keyframes kc2-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+@keyframes kc2-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes kc2-rise {
+  from {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes kc2-scan {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes note-flash {
+  from {
+    background-color: color-mix(in srgb, var(--color-signal) 14%, transparent);
+  }
+  to {
+    background-color: transparent;
+  }
+}
