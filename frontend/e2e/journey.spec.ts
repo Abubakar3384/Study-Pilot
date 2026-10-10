@@ -89,7 +89,7 @@ test('upload a PDF and study it end to end', async ({ page }) => {
   // Dashboard now reflects real activity.
   await page.getByRole('link', { name: 'Home' }).first().click()
   await expect(page.getByRole('heading', { name: 'Recent activity' })).toBeVisible()
-  await expect(page.getByRole('complementary', { name: 'Study overview' }).getByText(/Asked: What do mitochondria produce/).first()).toBeVisible()
+  await expect(page.getByText(/Asked: What do mitochondria produce/).first()).toBeVisible()
 })
 
 test('rejects a non-PDF before uploading', async ({ page }) => {

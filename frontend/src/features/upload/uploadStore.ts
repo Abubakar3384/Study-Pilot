@@ -74,8 +74,10 @@ export const useUpload = create<UploadStore>((set, get) => {
       if (current(session)) dispatch({ type: 'document', document: latest })
     }
     queryClient.setQueryData(qk.document(latest.id), latest)
-    // Put the new document in the cached list directly (newest first); the refetch is only a backstop.
-    queryClient.setQueryData<DocumentDto[]>(qk.documents, (list) => (list ? [latest, ...list.filter((d) => d.id !== latest.id)] : list))
+    // An older list request still in flight (e.g. the dashboard's first load) would overwrite the cache
+    // with a list that predates this upload, so cancel it before writing the new document in.
+    await queryClient.cancelQueries({ queryKey: qk.documents, exact: true })
+    queryClient.setQueryData<DocumentDto[]>(qk.documents, (list) => [latest, ...(list ?? []).filter((d) => d.id !== latest.id)])
     refreshLists()
     if (latest.status !== 'ready' || !current(session)) return
     generationAbort = new AbortController()

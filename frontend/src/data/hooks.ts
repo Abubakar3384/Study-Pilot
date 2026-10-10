@@ -20,7 +20,8 @@ async function orNull<T>(p: Promise<T>): Promise<T | null> {
 }
 
 export function useDocuments() {
-  return useQuery({ queryKey: qk.documents, queryFn: ({ signal }) => documentsApi.list(signal) })
+  // Cheap and central to the dashboard and library: always confirm the list when they mount.
+  return useQuery({ queryKey: qk.documents, queryFn: ({ signal }) => documentsApi.list(signal), refetchOnMount: 'always' })
 }
 
 export function useDocument(id: string) {

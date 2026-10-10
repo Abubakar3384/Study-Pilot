@@ -47,3 +47,19 @@ export const scene = {
   resolve: 300,
   scanPeriod: 2400,
 } as const
+
+/** Light theme (the default). Mirrors the `:root:not([data-theme='dark'])` block in styles/index.css. */
+export const lightColor = {
+  ink: '#F4F6FB',
+  surface1: '#FFFFFF',
+  surface2: '#EEF2F8',
+  line: '#E2E7F0',
+  lineStrong: '#CBD3E1',
+  text: '#172033',
+  text2: '#475167',
+  text3: '#5B6479',
+  signal: '#08718B',
+  amber: '#A15C07',
+  correct: '#157F3D',
+  incorrect: '#C0392B',
+} as const

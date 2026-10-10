@@ -102,7 +102,7 @@ export function NotesEditor({
         </p>
       )}
       {sections.map((section, si) => (
-        <fieldset key={section.key} className="rounded-md border border-line bg-surface-1 p-4">
+        <fieldset key={section.key} className="card p-4">
           <legend className="sr-only">Section {si + 1}</legend>
           <div className="flex flex-wrap items-end gap-3">
             <label className="min-w-[200px] flex-1">

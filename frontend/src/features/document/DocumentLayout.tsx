@@ -158,7 +158,7 @@ function StatusBanner({ context: { doc } }: { context: DocumentContext }) {
   return (
     <div className="mx-auto w-full max-w-[1400px] px-4 pt-4 md:px-6">
       {doc.status === 'processing' ? (
-        <div role="status" className="rounded-md border border-line bg-surface-1 p-4">
+        <div role="status" className="card p-4">
           <p className="font-medium">The server is still reading this document.</p>
           <ProgressBar label="Reading pages" className="mt-3" />
         </div>

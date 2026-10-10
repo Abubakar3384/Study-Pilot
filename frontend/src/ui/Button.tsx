@@ -7,7 +7,7 @@ type Variant = 'primary' | 'secondary' | 'ghost' | 'danger'
 type Size = 'sm' | 'md' | 'lg'
 
 const variants: Record<Variant, string> = {
-  primary: 'bg-signal text-ink hover:bg-[#82cfe3] disabled:bg-line-strong disabled:text-text-3',
+  primary: 'bg-signal text-ink hover:bg-signal/85 disabled:bg-line-strong disabled:text-text-3',
   secondary:
     'bg-surface-2 text-text border border-line-strong hover:border-text-3 disabled:text-text-3 disabled:hover:border-line-strong',
   ghost: 'text-text-2 hover:text-text hover:bg-surface-2 disabled:text-text-3 disabled:hover:bg-transparent',
@@ -21,7 +21,7 @@ const sizes: Record<Size, string> = {
 }
 
 /** Square, unpadded boxes for icon-only buttons (padding would squeeze the icon). */
-const iconSizes: Record<Size, string> = { sm: 'size-8', md: 'size-9', lg: 'size-11' }
+const iconSizes: Record<Size, string> = { sm: 'size-8 rounded-full', md: 'size-9 rounded-full', lg: 'size-11 rounded-full' }
 
 export interface ButtonProps extends Omit<ComponentPropsWithoutRef<'button'>, 'onAnimationStart' | 'onDrag' | 'onDragStart' | 'onDragEnd'> {
   variant?: Variant
@@ -46,7 +46,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       disabled={disabled || busy}
       aria-busy={busy || undefined}
       className={cn(
-        'inline-flex shrink-0 select-none items-center justify-center rounded-sm font-medium whitespace-nowrap transition-colors duration-150 [&_svg]:shrink-0',
+        'inline-flex shrink-0 select-none items-center justify-center rounded-xl font-medium whitespace-nowrap transition-colors duration-150 [&_svg]:shrink-0',
         variant === 'primary' && '[&_kbd]:border-ink/30 [&_kbd]:text-ink/75',
         variants[variant],
         iconOnly ? iconSizes[size] : sizes[size],

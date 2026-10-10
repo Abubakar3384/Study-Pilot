@@ -33,7 +33,7 @@ export function KnowledgeView({ input, store, actions, onPageClick, aside, toolb
       : 'Knowledge map area.'
 
   return (
-    <div className={cn('panel-elevated grid overflow-hidden rounded-xl border border-line bg-surface-1 lg:grid-cols-[minmax(0,1fr)_360px]', className)}>
+    <div className={cn('card grid overflow-hidden lg:grid-cols-[minmax(0,1fr)_360px]', className)}>
       <div className="flex min-w-0 flex-col">
         <div className="flex flex-wrap items-center gap-2 border-b border-line px-3 py-2">
           {toolbarStart}

@@ -153,7 +153,7 @@ function Session({ cards, toggle, onAddMore, adding }: { cards: FlashcardDto[]; 
     const soonest = Object.values(nextDue).sort()[0]
     return (
       <div className="mx-auto flex max-w-2xl flex-col gap-5 px-4 py-8">
-        <div className="rounded-md border border-line bg-surface-1 p-6">
+        <div className="card p-6">
           <p className="eyebrow">Session complete</p>
           <p className="mt-3 flex flex-wrap gap-x-8 gap-y-2">
             <span>

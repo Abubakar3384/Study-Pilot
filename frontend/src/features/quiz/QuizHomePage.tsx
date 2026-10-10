@@ -35,7 +35,7 @@ export default function QuizHomePage() {
 
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-6 px-4 py-6 md:px-6">
-      <section className="rounded-md border border-line bg-surface-1 p-5">
+      <section className="card p-5">
         <h2 className="text-lg font-semibold">New quiz</h2>
         <p className="mt-1 text-base text-text-2">
           Multiple-choice questions about the whole document. Check each answer as you go to see why it’s right, with the page it comes from.
@@ -61,7 +61,7 @@ export default function QuizHomePage() {
         ) : quizzes.data.length === 0 ? (
           <EmptyState icon={<ListChecks className="size-5" />} title="No quizzes yet" body="Your quizzes and scores will be listed here." />
         ) : (
-          <ul className="rounded-md border border-line bg-surface-1 px-4">
+          <ul className="card px-4">
             {quizzes.data.map((quiz, i) => {
               const list = attempts[i]?.data ?? []
               const best = list.reduce((m, a) => Math.max(m, a.score), -1)

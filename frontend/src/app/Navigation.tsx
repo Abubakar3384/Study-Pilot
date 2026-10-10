@@ -1,7 +1,8 @@
 import type { ComponentType } from 'react'
 import { Link, NavLink, useLocation, useSearchParams } from 'react-router'
 import { m } from 'motion/react'
-import { Home, Library, Star, Upload } from 'lucide-react'
+import { Home, Library, Moon, Star, Sun, Upload } from 'lucide-react'
+import { setTheme, useTheme } from './theme'
 import { LogoMark } from './Logo'
 import { prefetchRoute, type RouteModuleName } from './routes'
 import { t } from '../motion/variants'
@@ -44,7 +45,7 @@ export function NavRail() {
       <button
         type="button"
         onClick={pickFile}
-        className="mb-3 flex size-11 flex-col items-center justify-center rounded-sm bg-signal text-ink transition-colors hover:bg-[#82cfe3]"
+        className="mb-3 flex size-11 flex-col items-center justify-center rounded-2xl bg-signal text-ink transition-colors hover:bg-signal/85"
         aria-label="Upload a PDF"
         title="Upload a PDF"
       >
@@ -61,12 +62,12 @@ export function NavRail() {
                 onMouseEnter={() => prefetchRoute(item.module)}
                 onFocus={() => prefetchRoute(item.module)}
                 className={cn(
-                  'relative flex h-14 w-[60px] flex-col items-center justify-center gap-1 rounded-sm text-[11px] font-medium transition-colors',
-                  active ? 'text-text' : 'text-text-3 hover:text-text-2',
+                  'relative flex h-14 w-[60px] flex-col items-center justify-center gap-1 rounded-2xl text-[11px] font-medium transition-colors',
+                  active ? 'text-[var(--tile-blue-ink)]' : 'text-text-3 hover:text-text-2',
                 )}
               >
                 {active && (
-                  <m.span layoutId="rail-active" transition={t.base} className="absolute inset-0 rounded-sm bg-surface-2" />
+                  <m.span layoutId="rail-active" transition={t.base} className="tile-blue absolute inset-0 rounded-2xl" />
                 )}
                 {active && (
                   <m.span layoutId="rail-tick" transition={t.base} className="absolute top-3 bottom-3 left-[-6px] w-[2px] bg-signal" />
@@ -78,7 +79,24 @@ export function NavRail() {
           )
         })}
       </ul>
+      <ThemeToggle />
     </nav>
+  )
+}
+
+function ThemeToggle() {
+  const theme = useTheme()
+  const next = theme === 'dark' ? 'light' : 'dark'
+  return (
+    <button
+      type="button"
+      onClick={() => setTheme(next)}
+      aria-label={`Switch to ${next} theme`}
+      title={`Switch to ${next} theme`}
+      className="mt-auto flex size-11 items-center justify-center rounded-full text-text-3 transition-colors hover:bg-surface-2 hover:text-text"
+    >
+      {theme === 'dark' ? <Sun className="size-[18px]" /> : <Moon className="size-[18px]" />}
+    </button>
   )
 }
 

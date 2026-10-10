@@ -125,7 +125,7 @@ export default function QuizResultsPage() {
               const q = byId.get(r.question_id)
               if (!q) return null
               return (
-                <li key={r.question_id} className="rounded-md border border-line bg-surface-1 p-4">
+                <li key={r.question_id} className="card p-4">
                   <p className="font-serif text-lg leading-snug font-semibold">{q.question}</p>
                   <dl className="mt-3 grid gap-2 text-base">
                     <div className="flex items-start gap-2">

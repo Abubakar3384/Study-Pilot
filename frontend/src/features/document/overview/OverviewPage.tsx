@@ -149,7 +149,7 @@ function SummarySection({ docId }: { docId: string }) {
   })
 
   return (
-    <section aria-labelledby="summary-title" className="rounded-md border border-line bg-surface-1 p-5 md:p-6">
+    <section aria-labelledby="summary-title" className="card p-5 md:p-6">
       <h2 id="summary-title" className="eyebrow">
         Summary
       </h2>
@@ -199,7 +199,7 @@ const TOOLS: Array<{ to: string; label: string; body: string; icon: typeof BookO
 
 function StudyTools({ docId }: { docId: string }) {
   return (
-    <section aria-labelledby="tools-title" className="rounded-md border border-line bg-surface-1">
+    <section aria-labelledby="tools-title" className="card">
       <h2 id="tools-title" className="eyebrow px-4 pt-4">
         Study with this document
       </h2>
@@ -241,7 +241,7 @@ function NextStep() {
       </h2>
       <p className="mt-2 text-md font-semibold">{s.title}</p>
       <p className="mt-1 text-base text-text-2">{s.reason}</p>
-      <Link to={href} className="mt-3 inline-flex h-9 items-center gap-2 rounded-sm bg-signal px-3.5 text-base font-medium text-ink hover:bg-[#82cfe3]">
+      <Link to={href} className="mt-3 inline-flex h-9 items-center gap-2 rounded-sm bg-signal px-3.5 text-base font-medium text-ink hover:bg-signal/85">
         Start <ArrowRight className="size-4" aria-hidden />
       </Link>
     </section>

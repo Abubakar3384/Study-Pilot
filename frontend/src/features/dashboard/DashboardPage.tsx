@@ -2,14 +2,14 @@ import { useEffect, useMemo } from 'react'
 import { Link } from 'react-router'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { AnimatePresence, m } from 'motion/react'
-import { ArrowRight, Network } from 'lucide-react'
+import { ArrowRight, Network, Upload } from 'lucide-react'
 import { studyApi } from '../../api/endpoints/study'
 import { describeError } from '../../api/errors'
 import { qk } from '../../api/queryKeys'
 import { useActivity, useDocuments, useDueCounts, useKnowledgeGraph } from '../../data/hooks'
 import { documentTitle } from '../../data/format'
 import { hasFormed, markFormed } from '../../domain/formed'
-import { suggestNext } from '../../domain/suggestions'
+import { computeBadges, computeChallenges, computeStats, dailyActivity } from '../../domain/dashboardStats'
 import type { SceneInput } from '../../domain/types'
 import { sceneInputFor } from '../../domain/uploadPipeline'
 import { CanvasSlot } from '../../graph/CanvasSlot'
@@ -21,15 +21,16 @@ import type { KnowledgeGraph } from '../../domain/types'
 import { crossfade } from '../../motion/variants'
 import { Button } from '../../ui/Button'
 import { ErrorNotice, Skeleton } from '../../ui/Feedback'
-import { DocumentRow, warmDocument } from '../library/DocumentRow'
+import { warmDocument } from '../library/DocumentRow'
 import { UploadPanel } from '../upload/UploadPanel'
 import { useUpload } from '../upload/uploadStore'
 import { EmptyHero } from './EmptyHero'
-import { ContinueStudying, DueCards, RecentActivity, SuggestionCard } from './Widgets'
+import { ActivityChart, BadgesCard, ChallengesCard, DocumentsSection, StatTiles } from './DashboardCards'
+import { RecentActivity } from './Widgets'
 
 export default function DashboardPage() {
   const docs = useDocuments()
-  const activity = useActivity(20)
+  const activity = useActivity(100)
   const upload = useUpload((s) => s.state)
   const uploadGraph = useUpload((s) => s.graph)
   const store = useMemo(() => getGraphStore('dashboard', defaultViewMode()), [])
@@ -77,100 +78,90 @@ export default function DashboardPage() {
     )
   }
 
-  const suggestion = suggestNext(all, dueCounts, activity.data ?? [])
-  const latest = activity.data?.find((a) => a.type !== 'document_uploaded') ?? activity.data?.[0]
-  const latestDoc = latest ? all.find((d) => d.id === latest.document_id) : undefined
-  const starred = all.filter((d) => d.starred)
+  const items = activity.data ?? []
+  const stats = computeStats(all, items, dueCounts.reduce((sum, d) => sum + d.due, 0))
   const empty = all.length === 0 && !uploading
 
   return (
     <div className="mx-auto flex max-w-[1400px] flex-col gap-6 px-4 py-6 md:px-6 md:py-8">
+      <header className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <p className="text-sm font-medium text-text-3">{greeting()}</p>
+          <h1 className="text-3xl font-semibold tracking-[-0.02em] text-text">Dashboard</h1>
+        </div>
+        {!empty && (
+          <Button variant="primary" size="lg" className="rounded-full" icon={<Upload className="size-4" />} onClick={() => useUpload.getState().pickFile()}>
+            Upload PDF
+          </Button>
+        )}
+      </header>
+
       {empty ? (
         <EmptyHero />
       ) : (
-        <div className="grid overflow-hidden rounded-md border border-line bg-surface-1 lg:grid-cols-[minmax(0,1fr)_360px]">
-          <div className="flex min-w-0 flex-col">
-            <CanvasHeader
-              focusTitle={uploading ? (upload.document ? documentTitle(upload.document) : null) : focus ? documentTitle(focus) : null}
-              focusId={uploading ? upload.document?.id : focus?.id}
-              uploading={uploading && upload.phase !== 'ready'}
-              graph={input.kind === 'graph' ? input.graph : null}
-              store={store}
-            />
-            <div className="relative">
-              <CanvasSlot
-                input={input}
+        <>
+          <StatTiles stats={stats} />
+
+          <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
+            <div className="card flex min-w-0 flex-col overflow-hidden">
+              <CanvasHeader
+                focusTitle={uploading ? (upload.document ? documentTitle(upload.document) : null) : focus ? documentTitle(focus) : null}
+                focusId={uploading ? upload.document?.id : focus?.id}
+                uploading={uploading && upload.phase !== 'ready'}
+                graph={input.kind === 'graph' ? input.graph : null}
                 store={store}
-                description={
-                  input.kind === 'graph'
-                    ? `Concept map of ${documentTitle(focus ?? { filename: upload.fileName ?? '' })}: ${input.graph.concepts.length} concepts. Open the document for the full list.`
-                    : 'Document processing view.'
-                }
-                className="h-[52vh] min-h-[320px] lg:h-[min(64vh,660px)]"
               />
-              {!uploading && focus && !focusGraph.graph && !focusGraph.isPending && (
-                <BuildMapOverlay docId={focus.id} pageCount={focus.page_count} error={focusGraph.error} />
-              )}
-              {input.kind === 'graph' && focus && <SelectedConceptCard graph={input.graph} store={store} docId={focus.id} />}
+              <div className="relative flex flex-1 flex-col">
+                <CanvasSlot
+                  input={input}
+                  store={store}
+                  description={
+                    input.kind === 'graph'
+                      ? `Concept map of ${documentTitle(focus ?? { filename: upload.fileName ?? '' })}: ${input.graph.concepts.length} concepts. Open the document for the full list.`
+                      : 'Document processing view.'
+                  }
+                  className="canvas-atmosphere h-[50vh] min-h-[320px] flex-1 lg:h-auto lg:min-h-[560px]"
+                />
+                {!uploading && focus && !focusGraph.graph && !focusGraph.isPending && (
+                  <BuildMapOverlay docId={focus.id} pageCount={focus.page_count} error={focusGraph.error} />
+                )}
+                {input.kind === 'graph' && focus && <SelectedConceptCard graph={input.graph} store={store} docId={focus.id} />}
+              </div>
+            </div>
+
+            <aside className="flex flex-col gap-6" aria-label={uploading ? 'Upload progress' : 'Today'}>
+              <AnimatePresence mode="wait" initial={false}>
+                {uploading ? (
+                  <m.div key="upload" variants={crossfade} initial="initial" animate="animate" exit="exit" className="card overflow-hidden">
+                    <UploadPanel />
+                  </m.div>
+                ) : (
+                  <m.div key="widgets" variants={crossfade} initial="initial" animate="animate" exit="exit" className="flex flex-col gap-6">
+                    <ChallengesCard challenges={computeChallenges(all, dueCounts, items)} />
+                    <BadgesCard badges={computeBadges(all, items)} />
+                  </m.div>
+                )}
+              </AnimatePresence>
+            </aside>
+          </div>
+
+          <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
+            <ActivityChart days={dailyActivity(items)} />
+            <div className="card overflow-hidden">
+              <RecentActivity items={items} loading={activity.isPending} />
             </div>
           </div>
-          <aside className="border-t border-line lg:border-t-0 lg:border-l" aria-label={uploading ? 'Upload progress' : 'Study overview'}>
-            <AnimatePresence mode="wait" initial={false}>
-              {uploading ? (
-                <m.div key="upload" variants={crossfade} initial="initial" animate="animate" exit="exit">
-                  <UploadPanel />
-                </m.div>
-              ) : (
-                <m.div key="widgets" variants={crossfade} initial="initial" animate="animate" exit="exit">
-                  <SuggestionCard suggestion={suggestion} />
-                  <ContinueStudying item={latest} doc={latestDoc} />
-                  <DueCards counts={dueCounts} />
-                  <RecentActivity items={activity.data ?? []} loading={activity.isPending} />
-                </m.div>
-              )}
-            </AnimatePresence>
-          </aside>
-        </div>
-      )}
 
-      {all.length > 0 && (
-        <div className="grid gap-6 md:grid-cols-2">
-          <section aria-labelledby="recent-docs" className="rounded-md border border-line bg-surface-1">
-            <div className="flex items-center justify-between px-4 pt-4">
-              <h2 id="recent-docs" className="eyebrow">Recent documents</h2>
-              <Link to="/library" className="text-sm text-text-2 hover:text-signal">
-                My Library
-              </Link>
-            </div>
-            <ul className="px-3 pb-1">
-              {all.slice(0, 5).map((d) => (
-                <DocumentRow key={d.id} doc={d} />
-              ))}
-            </ul>
-          </section>
-          <section aria-labelledby="starred-docs" className="rounded-md border border-line bg-surface-1">
-            <div className="flex items-center justify-between px-4 pt-4">
-              <h2 id="starred-docs" className="eyebrow">Starred</h2>
-              {starred.length > 0 && (
-                <Link to="/library?filter=starred" className="text-sm text-text-2 hover:text-signal">
-                  All starred
-                </Link>
-              )}
-            </div>
-            {starred.length === 0 ? (
-              <p className="px-4 pt-2 pb-4 text-base text-text-2">Star the documents you’re revising now to keep them here.</p>
-            ) : (
-              <ul className="px-3 pb-1">
-                {starred.slice(0, 5).map((d) => (
-                  <DocumentRow key={d.id} doc={d} />
-                ))}
-              </ul>
-            )}
-          </section>
-        </div>
+          <DocumentsSection docs={all} />
+        </>
       )}
     </div>
   )
+}
+
+function greeting(now = new Date()) {
+  const h = now.getHours()
+  return h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening'
 }
 
 function CanvasHeader({
@@ -274,7 +265,7 @@ function PageRefLink({ docId, page }: { docId: string; page: number }) {
 function DashboardSkeleton() {
   return (
     <div className="mx-auto flex max-w-[1400px] flex-col gap-6 px-4 py-6 md:px-6 md:py-8" aria-busy="true">
-      <div className="grid overflow-hidden rounded-md border border-line bg-surface-1 lg:grid-cols-[minmax(0,1fr)_360px]">
+      <div className="grid overflow-hidden card lg:grid-cols-[minmax(0,1fr)_360px]">
         <div className="h-[52vh] min-h-[320px] lg:h-[min(64vh,660px)]" />
         <div className="flex flex-col gap-3 border-l border-line p-4">
           <Skeleton className="h-4 w-24" />

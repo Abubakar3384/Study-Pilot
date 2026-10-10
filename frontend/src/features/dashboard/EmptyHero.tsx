@@ -11,7 +11,7 @@ export function EmptyHero() {
   const pickFile = useUpload((s) => s.pickFile)
   const rejection = useUpload((s) => s.rejection)
   return (
-    <section className="grid items-center gap-10 rounded-md border border-line bg-surface-1 px-6 py-10 md:px-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] lg:py-16">
+    <section className="grid items-center gap-10 card px-6 py-10 md:px-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] lg:py-16">
       <div className="max-w-[46ch]">
         <p className="eyebrow">Start here</p>
         <h1 className="mt-3 text-3xl font-semibold tracking-[-0.02em] text-text">Turn a course PDF into a map you can study from.</h1>

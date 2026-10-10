@@ -443,3 +443,124 @@ mark.match {
   color: var(--color-signal);
   font-weight: 600;
 }
+
+/* ===================== Light theme (default) ===================== */
+/* The @theme block above holds the dark palette. Light overrides the same variables, so every
+   utility (bg-surface-1, text-text-2…) switches theme without touching components. */
+:root:not([data-theme='dark']) {
+  color-scheme: light;
+  --color-ink: #f4f6fb;
+  --color-surface-1: #ffffff;
+  --color-surface-2: #eef2f8;
+  --color-line: #e2e7f0;
+  --color-line-strong: #cbd3e1;
+  --color-text: #172033;
+  --color-text-2: #475167;
+  --color-text-3: #5b6479;
+  --color-signal: #08718b;
+  --color-amber: #a15c07;
+  --color-correct: #157f3d;
+  --color-incorrect: #c0392b;
+  --card-shadow: 0 1px 2px rgb(16 24 40 / 0.04), 0 10px 30px -14px rgb(16 24 40 / 0.16);
+}
+:root:not([data-theme='dark']) body {
+  background-color: #f4f6fb;
+  background-image:
+    radial-gradient(900px 600px at 100% -10%, rgb(205 225 248 / 0.7), transparent 60%),
+    radial-gradient(800px 600px at -10% 110%, rgb(251 228 239 / 0.6), transparent 60%);
+}
+:root[data-theme='dark'] {
+  --card-shadow: inset 0 1px 0 rgb(255 255 255 / 0.04), 0 1px 2px rgb(0 0 0 / 0.4), 0 18px 48px -18px rgb(0 0 0 / 0.65);
+}
+
+/* The knowledge-map stage stays dark in both themes so the glowing graph reads well. */
+.stage-dark {
+  color-scheme: dark;
+  --color-ink: #0c0f14;
+  --color-surface-1: #12161d;
+  --color-surface-2: #181d26;
+  --color-line: #252c37;
+  --color-line-strong: #343d4b;
+  --color-text: #e7eaee;
+  --color-text-2: #a3acb9;
+  --color-text-3: #7d8796;
+  --color-signal: #6cc4dc;
+  --color-amber: #e9b44c;
+  --color-correct: #5dbb8a;
+  --color-incorrect: #e4705f;
+  color: var(--color-text);
+}
+
+/* Pastel tiles (light theme) and their deep text colours; muted versions in dark. */
+:root {
+  --tile-blue: #dceaf8;
+  --tile-blue-ink: #1d4e89;
+  --tile-lavender: #e7e4fb;
+  --tile-lavender-ink: #4c3f9e;
+  --tile-pink: #fbe4ef;
+  --tile-pink-ink: #9d2f5f;
+  --tile-mint: #ddf4e7;
+  --tile-mint-ink: #1e6b45;
+  --tile-butter: #fcf0d2;
+  --tile-butter-ink: #7a4f00;
+}
+:root[data-theme='dark'] {
+  --tile-blue: #172433;
+  --tile-blue-ink: #9cc7f0;
+  --tile-lavender: #1f1d33;
+  --tile-lavender-ink: #bdb4f5;
+  --tile-pink: #2b1a24;
+  --tile-pink-ink: #f1a9c8;
+  --tile-mint: #15271e;
+  --tile-mint-ink: #9fdcb9;
+  --tile-butter: #2a2414;
+  --tile-butter-ink: #f0cf7e;
+}
+.tile-blue {
+  background: var(--tile-blue);
+  color: var(--tile-blue-ink);
+}
+.tile-lavender {
+  background: var(--tile-lavender);
+  color: var(--tile-lavender-ink);
+}
+.tile-pink {
+  background: var(--tile-pink);
+  color: var(--tile-pink-ink);
+}
+.tile-mint {
+  background: var(--tile-mint);
+  color: var(--tile-mint-ink);
+}
+.tile-butter {
+  background: var(--tile-butter);
+  color: var(--tile-butter-ink);
+}
+
+/* Rounded soft card used across screens. */
+.card {
+  border: 1px solid var(--color-line);
+  border-radius: 22px;
+  background: var(--color-surface-1);
+  box-shadow: var(--card-shadow);
+}
+.panel-elevated {
+  box-shadow: var(--card-shadow);
+}
+
+/* Activity bars: one validated series colour per theme (passes lightness, chroma and contrast checks). */
+:root {
+  --chart-bar: #0891b2;
+}
+:root[data-theme='dark'] {
+  --chart-bar: #1497bc;
+}
+.chart-bar {
+  background: var(--chart-bar);
+}
+
+/* Source Serif defaults to old-style figures ("Week o4"); titles read better with lining numerals. */
+.font-serif,
+.reading {
+  font-variant-numeric: lining-nums;
+}

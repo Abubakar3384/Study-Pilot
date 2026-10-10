@@ -164,7 +164,7 @@ export default function ReviewPage() {
           <h3 id="mistakes" className="eyebrow mb-3">
             Recent mistakes ({mistakes.length})
           </h3>
-          <ol className="flex flex-col divide-y divide-line rounded-md border border-line bg-surface-1">
+          <ol className="flex flex-col divide-y divide-line card">
             {mistakes.map((r) => {
               const q = byQuestion.get(r.question_id)
               if (!q) return null

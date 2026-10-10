@@ -11,9 +11,9 @@ import { warmDocument } from '../library/DocumentRow'
 
 export function Panel({ title, children, action }: { title: string; children: ReactNode; action?: ReactNode }) {
   return (
-    <section className="border-b border-line px-4 py-4 last:border-b-0">
-      <div className="mb-2 flex items-center justify-between">
-        <h2 className="eyebrow">{title}</h2>
+    <section className="px-5 py-5">
+      <div className="mb-3 flex items-center justify-between">
+        <h2 className="text-lg font-semibold tracking-[-0.01em] text-text">{title}</h2>
         {action}
       </div>
       {children}
@@ -62,7 +62,7 @@ export function SuggestionCard({ suggestion }: { suggestion: Suggestion }) {
           <Link
             to={href}
             onMouseEnter={warmDocument}
-            className="inline-flex h-9 items-center gap-2 rounded-sm bg-signal px-3.5 text-base font-medium text-ink transition-colors hover:bg-[#82cfe3]"
+            className="inline-flex h-9 items-center gap-2 rounded-sm bg-signal px-3.5 text-base font-medium text-ink transition-colors hover:bg-signal/85"
           >
             Start <ArrowRight className="size-4" aria-hidden />
           </Link>

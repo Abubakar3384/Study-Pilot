@@ -60,7 +60,7 @@ export default function LibraryPage() {
       </div>
 
       {docs.isPending ? (
-        <div className="flex flex-col gap-3 rounded-md border border-line bg-surface-1 p-4" aria-busy="true">
+        <div className="flex flex-col gap-3 card p-4" aria-busy="true">
           {[0, 1, 2].map((i) => (
             <Skeleton key={i} className="h-10 w-full" />
           ))}
@@ -86,7 +86,7 @@ export default function LibraryPage() {
           }
         />
       ) : (
-        <ul className="rounded-md border border-line bg-surface-1 px-3">
+        <ul className="card px-3">
           {items.map((d) => (
             <DocumentRow key={d.id} doc={d} />
           ))}

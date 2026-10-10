@@ -132,7 +132,7 @@ export function UploadPanel() {
             to={`/d/${doc.id}`}
             className={cn(
               'inline-flex h-9 items-center gap-2 rounded-sm px-3.5 text-base font-medium transition-colors',
-              conceptsDone || phase === 'ready' ? 'bg-signal text-ink hover:bg-[#82cfe3]' : 'border border-line-strong bg-surface-2 hover:border-text-3',
+              conceptsDone || phase === 'ready' ? 'bg-signal text-ink hover:bg-signal/85' : 'border border-line-strong bg-surface-2 hover:border-text-3',
             )}
           >
             Open document <ArrowRight className="size-4" aria-hidden />

@@ -54,7 +54,7 @@ export function EmptyState({
   className?: string
 }) {
   return (
-    <div className={cn('flex flex-col items-start gap-3 rounded-md border border-dashed border-line-strong p-6', className)}>
+    <div className={cn('flex flex-col items-start gap-3 rounded-[22px] border border-dashed border-line-strong bg-surface-1/60 p-6', className)}>
       {icon && <div className="text-text-3">{icon}</div>}
       <div>
         <h3 className="text-md font-semibold text-text">{title}</h3>
