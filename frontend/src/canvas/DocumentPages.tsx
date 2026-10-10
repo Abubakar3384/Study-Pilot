@@ -56,8 +56,9 @@ export function DocumentPages({ frame, count }: { frame: React.RefObject<FrameSt
     for (let i = 0; i < count; i++) {
       const o = i * POSE_STRIDE
       const started = snap.pages[i]! > 0 || snap.recede > 0
-      const scale = started ? pagePose[o + 6]! : 0
-      p.set(pagePose[o]!, pagePose[o + 1]!, pagePose[o + 2]!)
+      const lift = hoveredSurface === i ? 1 : citedSurface[i] ? 0.5 : 0
+      const scale = started ? pagePose[o + 6]! * (1 + 0.1 * lift) : 0
+      p.set(pagePose[o]!, pagePose[o + 1]! + 0.14 * lift * snap.recede, pagePose[o + 2]! + 0.1 * lift * snap.recede)
       q.setFromEuler(e.set(pagePose[o + 3]!, pagePose[o + 4]!, pagePose[o + 5]!))
       s.setScalar(scale)
       mesh.setMatrixAt(i, m4.compose(p, q, s))

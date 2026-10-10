@@ -13,7 +13,6 @@ import { DocumentPages } from './DocumentPages'
 import { createFrameState, POSE_STRIDE, type FrameState } from './frame'
 import type { FrameStats } from './frameStats'
 import { Projector } from './Projector'
-import { C } from './palette'
 
 export interface SceneProps {
   input: SceneInput
@@ -177,8 +176,7 @@ export function Scene({ input, store, tier, reducedMotion, frame, stats, onProje
 
   return (
     <>
-      <color attach="background" args={[C.ink.getHex()]} />
-      <fog attach="fog" args={[C.ink.getHex(), 9, 24]} />
+      <fog attach="fog" args={[0x0b0f17, 9, 24]} />
       <DocumentObject frame={frame} />
       <DocumentPages key={`pages-${layout.pages.length}`} frame={frame} count={layout.pages.length} />
       <ConceptNodes key={`nodes-${layout.version}`} frame={frame} count={layout.nodes.length} version={layout.version} />

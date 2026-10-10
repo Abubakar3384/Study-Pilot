@@ -69,10 +69,16 @@ function KnowledgeCanvas({
   const [dpr, setDpr] = useState(() => Math.min(window.devicePixelRatio || 1, tier === 'low' ? 1 : 1.75))
   const [onScreen, setOnScreen] = useState(true)
   const [pageVisible, setPageVisible] = useState(() => document.visibilityState === 'visible')
-  const [labelInfo, setLabelInfo] = useState<{ version: string; concepts: Concept[] }>({ version: '', concepts: [] })
+  const [labels, setLabelInfo] = useState<{ version: string; concepts: Concept[] }>({ version: '', concepts: [] })
+  const labelInfo = useRef(labels)
+  useEffect(() => {
+    labelInfo.current = labels
+  }, [labels])
   const labelEls = useRef<Array<HTMLDivElement | null>>([])
   const labelWidths = useRef<number[]>([])
   const labelShown = useRef<Uint8Array>(new Uint8Array(0))
+  const tooltip = useRef<HTMLDivElement>(null)
+  const tipFor = useRef(-1)
   const pointer = useRef({ x: 0, y: 0, downX: 0, downY: 0, down: false })
 
   // Render only while the canvas is attached, on screen and the tab is visible.
@@ -155,6 +161,25 @@ function KnowledgeCanvas({
       if (el.dataset.state !== state) el.dataset.state = state
     }
     labelShown.current = next
+
+    // Tooltip card for the hovered concept (not while it is already selected and labelled).
+    const tip = tooltip.current
+    if (tip) {
+      const show = hov >= 0 && hov !== sel && f.nodeShown[hov]! > 0.95
+      if (show) {
+        const concept = labelInfo.current.concepts[hov]
+        if (concept && tipFor.current !== hov) {
+          tipFor.current = hov
+          const kind = concept.importance === 3 ? 'Key concept' : concept.importance === 2 ? 'Supporting' : 'Detail'
+          tip.children[0]!.textContent = concept.title
+          tip.children[1]!.textContent = `${kind} · ${concept.pages.length} page${concept.pages.length === 1 ? '' : 's'}`
+        }
+        const x = Math.min(f.viewport.width - 180, f.screen[hov * 3]! + 14)
+        const y = Math.max(8, f.screen[hov * 3 + 1]! - 64)
+        tip.style.transform = `translate3d(${Math.round(x)}px, ${Math.round(y)}px, 0)`
+      }
+      tip.dataset.open = String(show)
+    }
   }, [store])
 
   const pickNode = (x: number, y: number, touch: boolean) => {
@@ -230,7 +255,8 @@ function KnowledgeCanvas({
     const f = frame.current
     if (node >= 0 && f) {
       const id = f.layout.nodes[node]!.id
-      s.select(s.selectedId === id ? null : id)
+      if (s.selectedId === id) s.resetView()
+      else s.locate(id)
       return
     }
     const page = pickPage(x, y)
@@ -238,7 +264,7 @@ function KnowledgeCanvas({
       onPageClick(f.layout.pages[page]!.fromPage)
       return
     }
-    s.select(null)
+    if (s.selectedId) s.resetView()
   }
 
   const onCreated = useCallback(
@@ -292,7 +318,7 @@ function KnowledgeCanvas({
       <ThreeCanvas
         frameloop={running ? 'demand' : 'never'}
         dpr={dpr}
-        gl={{ antialias: tier === 'high' && dpr < 2, alpha: false, powerPreference: 'high-performance', stencil: false }}
+        gl={{ antialias: tier === 'high' && dpr < 2, alpha: true, powerPreference: 'high-performance', stencil: false }}
         camera={{ fov: 36, near: 0.1, far: 60, position: [0, 1.2, 12] }}
         onCreated={onCreated}
       >
@@ -316,8 +342,8 @@ function KnowledgeCanvas({
         />
         <FirstFrame onReady={onReady} />
       </ThreeCanvas>
-      <div className="pointer-events-none absolute inset-0 overflow-hidden" key={labelInfo.version}>
-        {labelInfo.concepts.map((c, i) => (
+      <div className="pointer-events-none absolute inset-0 overflow-hidden" key={labels.version}>
+        {labels.concepts.map((c, i) => (
           <div
             key={c.id}
             ref={(el) => {
@@ -329,6 +355,10 @@ function KnowledgeCanvas({
             {c.title}
           </div>
         ))}
+        <div ref={tooltip} className="kc-tooltip" data-open="false" role="presentation">
+          <p className="text-base font-semibold text-text" />
+          <p className="mt-0.5 font-mono text-[11px] tracking-wide text-text-3 uppercase" />
+        </div>
       </div>
     </div>
   )

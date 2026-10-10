@@ -108,7 +108,7 @@ function ConceptSearch({ graph, store }: { graph: KnowledgeGraph; store: GraphSt
             setOpen(false)
           }
         }}
-        className="h-8 w-full rounded-sm border border-line-strong bg-surface-1 pr-14 pl-8 text-base text-text placeholder:text-text-3 focus:border-signal focus:outline-none"
+        className="h-9 w-full rounded-lg border border-line-strong bg-ink/60 pr-14 pl-8 transition-shadow text-base text-text placeholder:text-text-3 focus:border-signal focus:shadow-[0_0_0_3px_rgb(108_196_220/0.18),0_0_18px_-4px_rgb(108_196_220/0.6)] focus:outline-none"
       />
       <span className="absolute top-1/2 right-2 flex -translate-y-1/2 items-center gap-1">
         {query ? (
@@ -120,7 +120,7 @@ function ConceptSearch({ graph, store }: { graph: KnowledgeGraph; store: GraphSt
         )}
       </span>
       {open && results.length > 0 && (
-        <ul id={listId} role="listbox" className="absolute top-full right-0 left-0 z-20 mt-1 max-h-72 overflow-y-auto rounded-md border border-line-strong bg-surface-2 p-1">
+        <ul id={listId} role="listbox" className="scroll-slim absolute top-full right-0 left-0 z-20 mt-1.5 max-h-72 overflow-y-auto rounded-lg border border-line-strong bg-surface-2 p-1 shadow-[0_16px_40px_-12px_rgb(0_0_0/0.8)]">
           {results.map((c, i) => (
             <li
               key={c.id}
@@ -134,7 +134,7 @@ function ConceptSearch({ graph, store }: { graph: KnowledgeGraph; store: GraphSt
               onMouseEnter={() => setActive(i)}
               className={cn('flex cursor-pointer items-center justify-between gap-3 rounded-sm px-2 py-1.5 text-base', i === active && 'tint-signal')}
             >
-              <span className="truncate">{c.title}</span>
+              <span className="truncate">{highlight(c.title, query)}</span>
               <span className="shrink-0 font-mono text-xs text-text-3">p. {c.pages[0]}</span>
             </li>
           ))}
@@ -143,3 +143,18 @@ function ConceptSearch({ graph, store }: { graph: KnowledgeGraph; store: GraphSt
     </div>
   )
 }
+
+/** Wraps the first case-insensitive match of `query` in a highlighted <mark>. */
+function highlight(text: string, query: string) {
+  const q = query.trim()
+  const i = q ? text.toLowerCase().indexOf(q.toLowerCase()) : -1
+  if (i < 0) return text
+  return (
+    <>
+      {text.slice(0, i)}
+      <mark className="match">{text.slice(i, i + q.length)}</mark>
+      {text.slice(i + q.length)}
+    </>
+  )
+}
+

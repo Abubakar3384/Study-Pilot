@@ -1,11 +1,31 @@
 import { memo, useEffect, useMemo } from 'react'
 import { useFrame } from '@react-three/fiber'
-import { Color, IcosahedronGeometry, InstancedBufferAttribute, InstancedMesh, MeshBasicMaterial } from 'three'
+import {
+  AdditiveBlending, CanvasTexture, Color, IcosahedronGeometry, InstancedBufferAttribute, InstancedMesh, Matrix4,
+  MeshBasicMaterial, PlaneGeometry, Vector3,
+} from 'three'
 import { C } from './palette'
 import { damp, type FrameState } from './frame'
 
 const target = new Color()
 const base = new Color()
+const m4 = new Matrix4()
+const pos = new Vector3()
+const scl = new Vector3()
+
+/** Soft radial falloff, drawn once: the halo sprite behind every node (no bloom pass needed). */
+function haloTexture() {
+  const c = document.createElement('canvas')
+  c.width = c.height = 64
+  const ctx = c.getContext('2d')!
+  const g = ctx.createRadialGradient(32, 32, 0, 32, 32, 32)
+  g.addColorStop(0, 'rgba(255,255,255,0.9)')
+  g.addColorStop(0.25, 'rgba(255,255,255,0.35)')
+  g.addColorStop(1, 'rgba(255,255,255,0)')
+  ctx.fillStyle = g
+  ctx.fillRect(0, 0, 64, 64)
+  return new CanvasTexture(c)
+}
 
 /**
  * Every concept in a single instanced draw call. Selection and hover never re-render this component:
@@ -38,6 +58,19 @@ export const ConceptNodes = memo(function ConceptNodes({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [geometry, material, count, version])
 
+  // Halos: camera-facing quads with additive blending, one more instanced draw call.
+  const halo = useMemo(() => {
+    const geo = new PlaneGeometry(1, 1)
+    const mat = new MeshBasicMaterial({ map: haloTexture(), transparent: true, depthWrite: false, blending: AdditiveBlending, fog: false })
+    const h = new InstancedMesh(geo, mat, Math.max(1, count))
+    h.count = count
+    h.instanceMatrix.array.fill(0)
+    h.instanceColor = new InstancedBufferAttribute(new Float32Array(Math.max(1, count) * 3), 3)
+    h.frustumCulled = false
+    h.renderOrder = 1
+    return h
+  }, [count])
+
   useEffect(
     () => () => {
       geometry.dispose()
@@ -46,6 +79,15 @@ export const ConceptNodes = memo(function ConceptNodes({
     [geometry, material],
   )
   useEffect(() => () => mesh.dispose(), [mesh])
+  useEffect(
+    () => () => {
+      halo.geometry.dispose()
+      ;(halo.material as MeshBasicMaterial).map?.dispose()
+      ;(halo.material as MeshBasicMaterial).dispose()
+      halo.dispose()
+    },
+    [halo],
+  )
 
   useFrame((state, dt) => {
     const f = frame.current
@@ -54,7 +96,10 @@ export const ConceptNodes = memo(function ConceptNodes({
     const m = mesh.instanceMatrix.array
     const cols = mesh.instanceColor.array as Float32Array
     const hasSelection = selected >= 0
-    let moving = false
+    const hcols = halo.instanceColor!.array as Float32Array
+    // The selected node breathes gently (frames are requested only while something is selected).
+    const pulse = hasSelection ? 1 + 0.1 * Math.sin(state.clock.elapsedTime * 2.4) : 1
+    let moving = hasSelection
 
     for (let i = 0; i < count; i++) {
       const node = layout.nodes[i]!
@@ -86,7 +131,7 @@ export const ConceptNodes = memo(function ConceptNodes({
       if (node.importance === 3) base.copy(C.text).lerp(C.amber, snap.resolve)
       else base.copy(node.importance === 2 ? C.node2 : C.node1)
       if (isSel) target.copy(C.signal)
-      else if (hasSelection && !neighbor[i]) target.copy(base).lerp(C.ink, isHover ? 0.35 : 0.72)
+      else if (hasSelection && !neighbor[i]) target.copy(base).lerp(C.ink, isHover ? 0.35 : 0.8)
       else if (isHover) target.copy(base).lerp(C.signal, 0.45)
       else target.copy(base)
 
@@ -104,11 +149,27 @@ export const ConceptNodes = memo(function ConceptNodes({
         cols[o3 + 1] = target.g
         cols[o3 + 2] = target.b
       }
+
+      // Halo follows the node's current colour; brightness acts as opacity under additive blending.
+      const glow = isSel ? 0.85 : isHover ? 0.6 : hasSelection && !neighbor[i] ? 0.06 : node.importance === 3 ? 0.42 : 0.22
+      const hs = node.radius * nodeShown[i]! * em * (isSel ? 6.5 * pulse : 5)
+      pos.set(nodePos[i * 3]!, nodePos[i * 3 + 1]!, nodePos[i * 3 + 2]!)
+      halo.setMatrixAt(i, m4.compose(pos, state.camera.quaternion, scl.setScalar(hs)))
+      hcols[o3] = cols[o3]! * glow
+      hcols[o3 + 1] = cols[o3 + 1]! * glow
+      hcols[o3 + 2] = cols[o3 + 2]! * glow
     }
     mesh.instanceMatrix.needsUpdate = true
     mesh.instanceColor.needsUpdate = true
+    halo.instanceMatrix.needsUpdate = true
+    halo.instanceColor!.needsUpdate = true
     if (moving) state.invalidate()
   })
 
-  return <primitive object={mesh} dispose={null} />
+  return (
+    <>
+      <primitive object={halo} dispose={null} />
+      <primitive object={mesh} dispose={null} />
+    </>
+  )
 })

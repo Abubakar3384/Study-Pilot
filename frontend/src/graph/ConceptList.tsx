@@ -35,11 +35,11 @@ export function ConceptList({ graph, store, className }: { graph: KnowledgeGraph
       {items.length === 0 ? (
         <p className="px-4 pb-4 text-base text-text-2">No concept matches “{query}”.</p>
       ) : (
-        <ul aria-label="Concepts" className="min-h-0 flex-1 overflow-y-auto px-2 pb-3">
-          {items.map((c) => {
+        <ul aria-label="Concepts" className="scroll-slim fade-y min-h-0 flex-1 overflow-y-auto px-2 pb-3">
+          {items.map((c, i) => {
             const selected = c.id === selectedId
             return (
-              <li key={c.id}>
+              <li key={c.id} className="stagger-in" style={{ animationDelay: `${Math.min(i, 12) * 30}ms` }}>
                 <button
                   ref={(el) => {
                     if (el) itemRefs.current.set(c.id, el)
@@ -47,14 +47,14 @@ export function ConceptList({ graph, store, className }: { graph: KnowledgeGraph
                   }}
                   type="button"
                   aria-pressed={selected}
-                  onClick={() => store.getState().select(selected ? null : c.id)}
+                  onClick={() => (selected ? store.getState().resetView() : store.getState().locate(c.id))}
                   onMouseEnter={() => store.getState().hover(c.id)}
                   onMouseLeave={() => store.getState().hover(null)}
                   onFocus={() => store.getState().hover(c.id)}
                   onBlur={() => store.getState().hover(null)}
                   className={cn(
-                    'group flex w-full items-center gap-3 rounded-sm px-2 py-2 text-left transition-colors',
-                    selected ? 'tint-signal text-text' : c.id === hoveredId ? 'bg-surface-2' : 'hover:bg-surface-2',
+                    'list-row group relative flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-left',
+                    selected ? 'list-row-active text-text' : c.id === hoveredId ? 'bg-surface-2' : 'hover:bg-surface-2',
                   )}
                 >
                   <ImportanceMark importance={c.importance} selected={selected} />

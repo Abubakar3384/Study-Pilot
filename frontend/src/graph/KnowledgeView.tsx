@@ -33,7 +33,7 @@ export function KnowledgeView({ input, store, actions, onPageClick, aside, toolb
       : 'Knowledge map area.'
 
   return (
-    <div className={cn('grid overflow-hidden rounded-md border border-line bg-surface-1 lg:grid-cols-[minmax(0,1fr)_340px]', className)}>
+    <div className={cn('panel-elevated grid overflow-hidden rounded-xl border border-line bg-surface-1 lg:grid-cols-[minmax(0,1fr)_360px]', className)}>
       <div className="flex min-w-0 flex-col">
         <div className="flex flex-wrap items-center gap-2 border-b border-line px-3 py-2">
           {toolbarStart}
@@ -49,14 +49,14 @@ export function KnowledgeView({ input, store, actions, onPageClick, aside, toolb
           store={store}
           onPageClick={onPageClick}
           description={description}
-          className={cn('h-[52vh] min-h-[320px] lg:h-[min(66vh,700px)]', canvasClassName)}
+          className={cn('canvas-atmosphere h-[52vh] min-h-[320px] lg:h-[min(66vh,700px)]', canvasClassName)}
         />
       </div>
-      <aside className="flex min-h-0 flex-col border-t border-line lg:max-h-[calc(min(66vh,700px)+49px)] lg:border-t-0 lg:border-l">
+      <aside className="flex min-h-0 flex-col border-t border-line lg:h-[calc(min(66vh,700px)+49px)] lg:max-h-none lg:border-t-0 lg:border-l">
         {graph ? (
           <>
             <ConceptPanel graph={graph} store={store} actions={actions} />
-            <ConceptList graph={graph} store={store} className="min-h-[240px] flex-1" />
+            <ConceptList graph={graph} store={store} className="min-h-[200px] flex-1" />
           </>
         ) : (
           aside

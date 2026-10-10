@@ -256,3 +256,190 @@
     background-color: transparent;
   }
 }
+
+/* ===================== Visual polish layer ===================== */
+:root {
+  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Deep navy page with faint coloured light in two corners (fixed, so it never repaints on scroll). */
+body {
+  background-color: #0a0d13;
+  background-image:
+    radial-gradient(1100px 700px at 85% -10%, rgb(108 196 220 / 0.07), transparent 60%),
+    radial-gradient(900px 600px at -10% 110%, rgb(233 180 76 / 0.045), transparent 60%);
+  background-attachment: fixed;
+}
+
+/* Raised panels: hairline plus a soft layered shadow and a faint top highlight. */
+.panel-elevated {
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.04),
+    0 1px 2px rgb(0 0 0 / 0.4),
+    0 18px 48px -18px rgb(0 0 0 / 0.65);
+}
+
+/* The map stage: teal light behind the graph, a star-map dot grid and a vignette into the page. */
+.canvas-atmosphere {
+  background-color: #0b0f17;
+  background-image:
+    radial-gradient(60% 55% at 50% 45%, rgb(108 196 220 / 0.11), transparent 70%),
+    radial-gradient(35% 35% at 88% 92%, rgb(233 180 76 / 0.06), transparent 70%),
+    radial-gradient(rgb(163 172 185 / 0.13) 1px, transparent 1.2px);
+  background-size: auto, auto, 22px 22px;
+}
+.canvas-atmosphere::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  box-shadow: inset 0 0 90px 30px rgb(8 11 17 / 0.85);
+}
+
+.glow-signal {
+  box-shadow: 0 0 0 3px rgb(108 196 220 / 0.18), 0 0 14px 2px rgb(108 196 220 / 0.55);
+}
+.glow-amber {
+  box-shadow: 0 0 0 3px rgb(233 180 76 / 0.18), 0 0 14px 2px rgb(233 180 76 / 0.5);
+}
+
+.pill-badge {
+  display: inline-flex;
+  align-items: center;
+  height: 1.375rem;
+  padding: 0 0.6rem;
+  border-width: 1px;
+  border-radius: 999px;
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: rgb(255 255 255 / 0.02);
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  height: 1.875rem;
+  padding: 0 0.75rem;
+  border: 1px solid var(--color-line-strong);
+  border-radius: 999px;
+  font-size: 0.8125rem;
+  color: var(--color-text-2);
+  background: rgb(255 255 255 / 0.015);
+  transition:
+    transform 200ms var(--ease-out-soft),
+    border-color 200ms var(--ease-out-soft),
+    color 200ms var(--ease-out-soft),
+    box-shadow 200ms var(--ease-out-soft);
+}
+.chip:hover {
+  transform: translateY(-1px);
+  color: var(--color-text);
+  border-color: rgb(108 196 220 / 0.6);
+  box-shadow: 0 4px 14px -6px rgb(108 196 220 / 0.55);
+}
+
+.btn-glow {
+  box-shadow: 0 0 0 1px rgb(108 196 220 / 0.35), 0 6px 20px -6px rgb(108 196 220 / 0.6);
+}
+.btn-glow:hover {
+  box-shadow: 0 0 0 1px rgb(108 196 220 / 0.55), 0 8px 26px -6px rgb(108 196 220 / 0.75);
+}
+
+.list-row {
+  transition: background-color 180ms var(--ease-out-soft), color 180ms var(--ease-out-soft);
+}
+.list-row-active {
+  background: rgb(108 196 220 / 0.09);
+}
+.list-row-active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.45rem;
+  bottom: 0.45rem;
+  width: 2px;
+  border-radius: 2px;
+  background: var(--color-signal);
+  box-shadow: 0 0 10px rgb(108 196 220 / 0.8);
+}
+
+/* Slim scrollbars and soft fade at the top and bottom of scroll areas. */
+.scroll-slim {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-line-strong) transparent;
+}
+.scroll-slim::-webkit-scrollbar {
+  width: 6px;
+}
+.scroll-slim::-webkit-scrollbar-thumb {
+  background: var(--color-line-strong);
+  border-radius: 999px;
+}
+.fade-y {
+  mask-image: linear-gradient(to bottom, transparent 0, #000 12px, #000 calc(100% - 16px), transparent 100%);
+}
+
+/* Staggered entrance; reduced motion collapses it via the global rule above. */
+@media (prefers-reduced-motion: no-preference) {
+  .stagger-in {
+    animation: stagger-in 420ms var(--ease-out-soft) both;
+  }
+}
+@keyframes stagger-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Skeleton shimmer. */
+.shimmer {
+  background-color: var(--color-surface-2);
+  background-image: linear-gradient(100deg, transparent 20%, rgb(255 255 255 / 0.05) 50%, transparent 80%);
+  background-size: 200% 100%;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .shimmer {
+    animation: shimmer 1.4s linear infinite;
+  }
+}
+@keyframes shimmer {
+  from {
+    background-position: 150% 0;
+  }
+  to {
+    background-position: -50% 0;
+  }
+}
+
+/* Node hover tooltip on the 3D map. */
+.kc-tooltip {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  min-width: 10rem;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--color-line-strong);
+  border-radius: 10px;
+  background: rgb(18 22 29 / 0.94);
+  box-shadow: 0 12px 32px -10px rgb(0 0 0 / 0.8);
+  opacity: 0;
+  transition: opacity 150ms var(--ease-out-soft);
+}
+.kc-tooltip[data-open='true'] {
+  opacity: 1;
+}
+
+mark.match {
+  background: transparent;
+  color: var(--color-signal);
+  font-weight: 600;
+}

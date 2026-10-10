@@ -72,7 +72,7 @@ export function CameraRig({
       fromTarget: c.target.clone(),
       toTarget: toTarget.clone(),
       start: performance.now(),
-      dur: 650,
+      dur: 750,
     }
     invalidate()
   }
@@ -118,19 +118,17 @@ export function CameraRig({
           startTween(home.current.pos.clone(), HOME_TARGET)
         }
         if (s.focus && s.focus !== prev.focus) {
+          // Fly part-way towards the chosen concept: closer, but the rest of the map stays in view.
           const f = frame.current
           const idx = f?.layout.byId.get(s.focus.id)
-          if (f && idx !== undefined) {
-            const sx = f.screen[idx * 3]!
-            const sy = f.screen[idx * 3 + 1]!
-            const { width, height } = f.viewport
-            const offscreen = sx < width * 0.08 || sx > width * 0.92 || sy < height * 0.08 || sy > height * 0.92
-            if (offscreen) {
-              const node = f.layout.nodes[idx]!
-              const toTarget = new Vector3(node.x * 0.6, (HOME_TARGET.y + node.y) / 2, 0)
-              const dist = home.current.dist * 0.85
-              startTween(toTarget.clone().add(new Vector3(0, dist * ELEVATION, dist)), toTarget)
-            }
+          // On tall portrait screens the whole map barely fits, so keep the overview instead of flying.
+          const portrait = f ? f.viewport.width < f.viewport.height : false
+          if (f && idx !== undefined && !portrait) {
+            const node = f.layout.nodes[idx]!
+            const toTarget = new Vector3(node.x * 0.55, (HOME_TARGET.y + node.y) / 2, node.z * 0.3)
+            const dist = home.current.dist * 0.8
+            userMoved.current = true
+            startTween(toTarget.clone().add(new Vector3(0, dist * ELEVATION, dist)), toTarget)
           }
         }
       }),

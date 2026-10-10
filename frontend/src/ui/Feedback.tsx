@@ -29,7 +29,7 @@ export function ProgressBar({ value, label, className }: { value?: number; label
 }
 
 export function Skeleton({ className }: { className?: string }) {
-  return <div aria-hidden className={cn('rounded-sm bg-surface-2 motion-safe:animate-pulse', className)} />
+  return <div aria-hidden className={cn('shimmer rounded-md', className)} />
 }
 
 export function Kbd({ children }: { children: ReactNode }) {
