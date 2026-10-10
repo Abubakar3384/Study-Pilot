@@ -36,6 +36,9 @@ class Settings(BaseSettings):
     ollama_num_predict: int = Field(default=2048, ge=256)
     # Longest silence tolerated from Ollama (the reply is streamed), separate from the cloud timeout.
     ollama_timeout_seconds: float = Field(default=600.0, gt=0)
+    # Who builds concept maps: "auto" = the offline mock when AI_PROVIDER=ollama (fast, keeps the local
+    # model free for notes/quizzes), otherwise the main provider; "mock" or "main" force one.
+    ai_concepts_provider: Literal["auto", "mock", "main"] = "auto"
     ai_timeout_seconds: float = Field(default=60.0, gt=0)
     ai_max_attempts: int = Field(default=3, ge=1, le=10)
     ai_retry_backoff_seconds: float = Field(default=1.0, ge=0)
@@ -68,6 +71,17 @@ class Settings(BaseSettings):
             fits = int((self.ollama_num_ctx - self.ollama_num_predict - 800) * 3.5)
             return max(2_000, min(self.ollama_max_context_chars, fits))
         return self.ai_max_context_chars
+
+    @property
+    def concepts_use_mock(self) -> bool:
+        if self.ai_concepts_provider == "auto":
+            return self.ai_provider == "ollama"
+        return self.ai_concepts_provider == "mock"
+
+    @property
+    def concepts_context_chars(self) -> int:
+        """The mock is instant and free, so a mock-built concept map can read the whole budget."""
+        return self.ai_max_context_chars if self.concepts_use_mock else self.context_chars
 
     @property
     def max_upload_bytes(self) -> int:

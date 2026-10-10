@@ -79,6 +79,11 @@ Notes:
   "CPU" is slow. On CPU, lower `OLLAMA_MAX_CONTEXT_CHARS` (e.g. `5000`) or use a smaller model
   such as `llama3.2:3b`.
 
+- Concept maps: with `AI_PROVIDER=ollama`, concept maps are built by the offline mock (keyword
+  analysis of the whole PDF, instant) while summaries, notes, quizzes, flashcards and chat use Ollama.
+  The map is labelled "keyword map" in the app. Set `AI_CONCEPTS_PROVIDER=main` to have Ollama build
+  it too. `/api/health` shows `"concepts_provider"` when the two differ.
+
 Deployments: leave `AI_PROVIDER` unset (or `mock`) and the app runs on the offline mock provider.
 
 ## Test
@@ -193,10 +198,10 @@ Full machine-readable schemas are at `/docs` and `/openapi.json`. Field shapes a
 |---|---|
 | `POST /api/documents/{id}/summary` | `201 {id, document_id, created_at, overview, key_points: [{text, page_number}]}` |
 | `GET /api/documents/{id}/summary` | Latest summary, or `404` |
-| `POST /api/documents/{id}/notes` | `201 {id, document_id, created_at, title, sections: [{heading, bullets: string[], page_number}]}` |
+| `POST /api/documents/{id}/notes` | `201 {id, document_id, created_at, title, sections: [{heading, paragraphs: string[], bullets: string[], page_number}]}` (new notes use `paragraphs` with `**bold**`/`*italic*`; `bullets` remains for older notes) |
 | `GET /api/documents/{id}/notes` | Latest notes, or `404` |
 | `PUT /api/documents/{id}/notes` | Body `{title, sections}`; saves the student's edit as the newest version (`source: "user"`) |
-| `POST /api/documents/{id}/concepts` | `201 {id, document_id, created_at, concepts: [{id, title, explanation, page_numbers, importance}], relations: [{source, target, kind}]}` |
+| `POST /api/documents/{id}/concepts` | `201 {id, document_id, created_at, concepts: [{id, title, explanation, page_numbers, importance}], relations: [{source, target, kind}], generator}` (`generator` is e.g. `"mock"` or `"ollama"`) |
 | `GET /api/documents/{id}/concepts` | Latest concept map, or `404` |
 
 Each POST generates a new version. The GET routes return the most recent one. Notes carry

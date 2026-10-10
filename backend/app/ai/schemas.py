@@ -33,10 +33,23 @@ class SummaryOutput(_Out):
         return {k.page_number for k in self.key_points}
 
 
+Paragraph = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=3000)]
+
+
 class NoteSection(BaseModel):
+    """A topic in the notes. New notes use `paragraphs` (prose with **bold** / *italic* emphasis);
+    `bullets` is kept so notes saved before the paragraph format still load and validate."""
+
     heading: ShortText
-    bullets: list[Text] = Field(min_length=1, max_length=15)
+    paragraphs: list[Paragraph] = Field(default_factory=list, max_length=8)
+    bullets: list[Text] = Field(default_factory=list, max_length=15)
     page_number: PageNumber
+
+    @model_validator(mode="after")
+    def _has_content(self) -> "NoteSection":
+        if not self.paragraphs and not self.bullets:
+            raise ValueError("a section needs at least one paragraph")
+        return self
 
 
 class NotesOutput(_Out):

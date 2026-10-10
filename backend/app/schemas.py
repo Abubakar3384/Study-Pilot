@@ -75,6 +75,9 @@ class ConceptMapOut(BaseModel):
     created_at: datetime
     concepts: list[ConceptOutput]
     relations: list[ConceptRelation]
+    generator: str | None = Field(
+        default=None, description='Provider that built the map, e.g. "mock" (keyword-based) or "ollama"'
+    )
 
 
 # ------------------------------------------------------------------ quizzes

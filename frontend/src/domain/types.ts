@@ -33,6 +33,8 @@ export interface KnowledgeGraph {
   links: ConceptLink[]
   /** True for bundled example data, which must be labelled as such in the UI. */
   isExample?: boolean
+  /** What built it, e.g. "mock" (keyword analysis, labelled in the UI) or "ollama". */
+  generator?: string | null
 }
 
 /**

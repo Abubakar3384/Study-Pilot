@@ -500,6 +500,11 @@ export interface components {
             concepts: components["schemas"]["ConceptOutput"][];
             /** Relations */
             relations: components["schemas"]["ConceptRelation"][];
+            /**
+             * Generator
+             * @description Provider that built the map, e.g. "mock" (keyword-based) or "ollama"
+             */
+            generator?: string | null;
         };
         /** ConceptOutput */
         ConceptOutput: {
@@ -677,12 +682,18 @@ export interface components {
              */
             created_at: string;
         };
-        /** NoteSection */
+        /**
+         * NoteSection
+         * @description A topic in the notes. New notes use `paragraphs` (prose with **bold** / *italic* emphasis);
+         *     `bullets` is kept so notes saved before the paragraph format still load and validate.
+         */
         NoteSection: {
             /** Heading */
             heading: string;
+            /** Paragraphs */
+            paragraphs?: string[];
             /** Bullets */
-            bullets: string[];
+            bullets?: string[];
             /** Page Number */
             page_number: number;
         };

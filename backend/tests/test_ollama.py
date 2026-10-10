@@ -101,7 +101,8 @@ def test_runner_reports_unreachable_ollama_as_ai_unavailable():
 
 def test_factory_and_context_budget(tmp_path):
     s = Settings(_env_file=None, ai_provider="ollama", database_url=f"sqlite:///{tmp_path.as_posix()}/x.db")
-    p = build_provider(s)
+    router = build_provider(s)
+    p = router.default
     assert isinstance(p, OllamaProvider) and p.model == "llama3.1:8b" and p.num_ctx == 8192
     assert p.num_predict == 2048 and p.timeout == 600
     # Local models get a small document budget by default...
@@ -149,3 +150,48 @@ def test_health_reports_provider_and_model(make_client):
     p = provider_with(lambda r: chat_reply("{}"))
     client = make_client(provider=p)
     assert client.get("/api/health").json() == {"status": "ok", "ai_provider": "ollama", "ai_model": "llama3.1:8b"}
+
+
+# ------------------------------------------------- concept maps from the mock, the rest from Ollama
+
+def test_ollama_routes_concept_maps_to_the_mock_by_default(tmp_path):
+    from app.ai.mock import MockProvider
+    from app.ai.router import TaskRouter
+
+    s = Settings(_env_file=None, ai_provider="ollama")
+    router = build_provider(s)
+    assert isinstance(router, TaskRouter)
+    assert isinstance(router.provider_for(Task.CONCEPTS), MockProvider)
+    assert isinstance(router.provider_for(Task.NOTES), OllamaProvider)
+    assert isinstance(router.provider_for(Task.QUIZ), OllamaProvider)
+    # The mock is free and instant, so the concept map may read the whole document budget.
+    assert s.concepts_context_chars == s.ai_max_context_chars > s.context_chars
+    # "main" keeps concept maps on Ollama; the mock provider never routes.
+    assert isinstance(build_provider(Settings(_env_file=None, ai_provider="ollama", ai_concepts_provider="main")), OllamaProvider)
+    assert isinstance(build_provider(Settings(_env_file=None, ai_provider="mock")), MockProvider)
+
+
+def test_routed_app_uses_ollama_for_notes_and_mock_for_the_map(make_client, sample_pdf):
+    from app.ai.mock import MockProvider
+    from app.ai.router import TaskRouter
+    from tests.conftest import upload
+
+    tasks = []
+
+    def handler(req):
+        tasks.append(json.loads(req.content)["messages"][1]["content"][:40])
+        notes = {"title": "Cells", "sections": [{"heading": "Mitochondria", "paragraphs": ["**Mitochondria** make ATP."], "page_number": 3}]}
+        return chat_reply(json.dumps(notes))
+
+    client = make_client(provider=TaskRouter(provider_with(handler), {Task.CONCEPTS: MockProvider()}))
+    doc = upload(client, sample_pdf).json()
+
+    concepts = client.post(f"/api/documents/{doc['id']}/concepts").json()
+    assert concepts["generator"] == "mock" and tasks == []  # Ollama was not called for the map
+
+    notes = client.post(f"/api/documents/{doc['id']}/notes").json()
+    assert notes["sections"][0]["paragraphs"] == ["**Mitochondria** make ATP."]
+    assert len(tasks) == 1  # ...but was for the notes
+
+    health = client.get("/api/health").json()
+    assert health["ai_provider"] == "ollama" and health["concepts_provider"] == "mock"

@@ -599,3 +599,28 @@ mark.match {
   background: rgb(255 255 255 / 0.88);
   box-shadow: 0 1px 2px rgb(16 24 40 / 0.08);
 }
+
+/* Notes: paragraph prose with generous line height (key terms in bold, emphasis in italics). */
+.note-prose {
+  max-width: 72ch;
+  font-size: 1.0625rem;
+  line-height: 1.9;
+  color: var(--color-text-2);
+}
+.note-prose p + p {
+  margin-top: 1.1em;
+}
+.note-prose strong {
+  color: var(--color-text);
+  font-weight: 700;
+}
+.note-prose em {
+  color: var(--color-text);
+}
+.note-prose code {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  padding: 0.1em 0.3em;
+  border-radius: 4px;
+  background: var(--color-surface-2);
+}

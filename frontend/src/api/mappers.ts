@@ -15,5 +15,6 @@ export function toKnowledgeGraph(dto: ConceptMapDto, pageCount: number): Knowled
       importance: Math.min(3, Math.max(1, c.importance)) as ConceptImportance,
     })),
     links: dto.relations.map((r) => ({ source: r.source, target: r.target, kind: r.kind ?? 'related' })),
+    generator: dto.generator ?? null,
   }
 }

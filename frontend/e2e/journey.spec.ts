@@ -46,7 +46,7 @@ test('upload a PDF and study it end to end', async ({ page }) => {
   await page.getByRole('link', { name: 'Notes', exact: true }).click()
   await page.getByRole('button', { name: 'Generate notes' }).click()
   await page.getByRole('button', { name: 'Edit' }).click()
-  await page.getByRole('textbox', { name: 'Point 1 of section 1' }).fill('All living things are made of cells.')
+  await page.getByRole('textbox', { name: 'Paragraph 1 of section 1' }).fill('All living things are made of cells.')
   await expect(page.getByRole('status').filter({ hasText: 'Saved' })).toBeVisible()
   await page.getByRole('button', { name: 'Done' }).click()
   await expect(page.getByText('All living things are made of cells.')).toBeVisible()

@@ -1,11 +1,19 @@
 from app.ai.anthropic import AnthropicProvider
-from app.ai.base import LLMProvider
+from app.ai.base import LLMProvider, Task
 from app.ai.mock import MockProvider
 from app.ai.ollama import OllamaProvider
+from app.ai.router import TaskRouter
 from app.config import Settings
 
 
 def build_provider(settings: Settings) -> LLMProvider:
+    main = _build_main(settings)
+    if settings.concepts_use_mock and settings.ai_provider != "mock":
+        return TaskRouter(main, {Task.CONCEPTS: MockProvider(mode="ok")})
+    return main
+
+
+def _build_main(settings: Settings) -> LLMProvider:
     if settings.ai_provider == "mock":
         return MockProvider(mode=settings.mock_mode, fail_times=settings.mock_fail_times)
     if settings.ai_provider == "anthropic":

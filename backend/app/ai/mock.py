@@ -114,10 +114,19 @@ class MockProvider:
         }
 
     def _notes(self, pages):
+        def paragraphs(sents):
+            # Group the page's sentences into paragraphs of up to four, bolding the first sentence.
+            groups = [sents[i : i + 4] for i in range(0, min(len(sents), 12), 4)]
+            out = []
+            for g in groups:
+                first, rest = g[0], g[1:]
+                out.append(" ".join([f"**{first}**", *rest]) if not out else " ".join(g))
+            return out or ["(no text)"]
+
         return {
             "title": "Study notes",
             "sections": [
-                {"heading": f"Page {n}", "bullets": s[:5], "page_number": n} for n, s in pages[:12]
+                {"heading": f"Page {n}", "paragraphs": paragraphs(s), "page_number": n} for n, s in pages[:12]
             ],
         }
 

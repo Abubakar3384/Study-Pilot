@@ -33,7 +33,7 @@ def get_study(
     runner: AIRunner = Depends(get_runner),
     settings: Settings = Depends(get_settings),
 ) -> StudyService:
-    return StudyService(db, runner, settings.context_chars, settings.ai_max_tokens)
+    return StudyService(db, runner, settings.context_chars, settings.ai_max_tokens, settings.concepts_context_chars)
 
 
 def get_chat(

@@ -19,7 +19,11 @@ SCHEMAS = {
     "notes": {
         "title": "string",
         "sections": [
-            {"heading": "string", "bullets": ["string, concise study note"], "page_number": "int"}
+            {
+                "heading": "string, short topic title",
+                "paragraphs": ["string, one paragraph of 3-6 full sentences (2-4 paragraphs per section)"],
+                "page_number": "int, page the section is mainly based on",
+            }
         ],
     },
     "quiz": {
@@ -81,7 +85,11 @@ def summary_prompt(pages: list[dict]) -> str:
 
 def notes_prompt(pages: list[dict]) -> str:
     return (
-        "Write organised study notes for this document, grouped into sections by topic.\n"
+        "Write detailed study notes for this document, grouped into 4-10 sections by topic. "
+        "Write in flowing paragraphs, not bullet points: each section has 2-4 paragraphs of 3-6 full "
+        "sentences that explain the idea, why it matters and how it connects to the rest of the material, "
+        "using the document's own definitions and examples. Mark key terms with **bold** and use "
+        "*italics* for emphasis. Only state what the document supports.\n"
         f"<document>\n{format_pages(pages)}\n</document>\n\n"
         f"Return JSON matching:\n{_schema('notes')}"
     )

@@ -37,11 +37,19 @@ def _pages_of(context: list[dict]) -> set[int]:
 
 
 class StudyService:
-    def __init__(self, db: Session, runner: AIRunner, max_context_chars: int, max_tokens: int = 4096):
+    def __init__(
+        self,
+        db: Session,
+        runner: AIRunner,
+        max_context_chars: int,
+        max_tokens: int = 4096,
+        concepts_context_chars: int | None = None,
+    ):
         self.db = db
         self.runner = runner
         self.max_context_chars = max_context_chars
         self.max_tokens = max_tokens
+        self.concepts_context_chars = concepts_context_chars or max_context_chars
 
     def _request(self, task: str, prompt: str, payload: dict) -> LLMRequest:
         return LLMRequest(task, prompts.BASE_SYSTEM, prompt, payload, self.max_tokens)
@@ -65,12 +73,15 @@ class StudyService:
         return self._store_generated(doc, "notes", out.model_dump())
 
     def generate_concepts(self, doc: Document) -> GeneratedContent:
-        ctx = select_context(doc, self.max_context_chars)
+        ctx = select_context(doc, self.concepts_context_chars)
         out = self.runner.generate(
             self._request(Task.CONCEPTS, prompts.concepts_prompt(ctx), {"pages": ctx}),
             ConceptMapOutput, _pages_of(ctx),
         )
-        return self._store_generated(doc, "concepts", out.model_dump())
+        # Record what built it, so the UI can say "keyword map" rather than imply an AI made it.
+        provider = self.runner.provider
+        generator = provider.provider_for(Task.CONCEPTS).name if hasattr(provider, "provider_for") else provider.name
+        return self._store_generated(doc, "concepts", {**out.model_dump(), "generator": generator})
 
     def save_notes(self, doc: Document, notes: NotesOutput) -> GeneratedContent:
         """Store a student's edited notes as the newest version; earlier versions are kept."""

@@ -214,21 +214,32 @@ function NotesView({
                   sectionRefs.current[i] = el
                 }}
                 className={cn(
-                  'scroll-mt-32 border-b border-line py-6 outline-none last:border-b-0',
+                  'scroll-mt-32 rounded-2xl py-6 outline-none',
                   i === target && 'motion-safe:animate-[note-flash_1.6s_var(--ease-standard)]',
                 )}
               >
                 <div className="flex items-baseline justify-between gap-4">
-                  <h3 className="font-serif text-xl font-semibold">{section.heading}</h3>
+                  <h3 className="text-xl font-bold tracking-[-0.01em] text-text">{section.heading}</h3>
                   <PageRef page={section.page_number} />
                 </div>
-                <ul className="reading mt-3 flex flex-col gap-2.5">
-                  {section.bullets.map((b, j) => (
-                    <li key={j} className="relative pl-5 before:absolute before:top-[0.72em] before:left-0 before:h-px before:w-2.5 before:bg-text-3">
-                      <RichText text={b} />
-                    </li>
-                  ))}
-                </ul>
+                {section.paragraphs?.length ? (
+                  <div className="note-prose mt-3">
+                    {section.paragraphs.map((para, j) => (
+                      <p key={j}>
+                        <RichText text={para} />
+                      </p>
+                    ))}
+                  </div>
+                ) : (
+                  // Notes saved before the paragraph format.
+                  <ul className="note-prose mt-3 flex flex-col gap-2">
+                    {(section.bullets ?? []).map((b, j) => (
+                      <li key={j} className="relative pl-5 before:absolute before:top-[0.85em] before:left-0 before:h-px before:w-2.5 before:bg-text-3">
+                        <RichText text={b} />
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </section>
             ))}
           </div>

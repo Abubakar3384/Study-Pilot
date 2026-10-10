@@ -5,7 +5,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from app.ai.base import LLMProvider
+from app.ai.base import LLMProvider, Task
 from app.ai.factory import build_provider
 from app.ai.runner import AIRunner
 from app.api import activity, chat, documents, study
@@ -65,6 +65,8 @@ def create_app(settings: Settings | None = None, provider: LLMProvider | None = 
         body = {"status": "ok", "ai_provider": provider.name}
         if getattr(provider, "model", None):
             body["ai_model"] = provider.model
+        if hasattr(provider, "provider_for"):
+            body["concepts_provider"] = provider.provider_for(Task.CONCEPTS).name
         return body
 
     app.include_router(documents.router)

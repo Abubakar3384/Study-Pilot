@@ -196,3 +196,29 @@ def test_mock_concepts_are_deterministic(client, ready_doc):
     a = client.post(f"/api/documents/{ready_doc['id']}/concepts").json()
     b = client.post(f"/api/documents/{ready_doc['id']}/concepts").json()
     assert json.dumps(a["concepts"]) == json.dumps(b["concepts"])
+
+
+# ------------------------------------------------------------- paragraph notes
+
+def test_notes_are_paragraphs_and_old_bullet_notes_still_load(client, ready_doc):
+    from app.ai.schemas import NoteSection
+
+    doc_id = ready_doc["id"]
+    notes = client.post(f"/api/documents/{doc_id}/notes").json()
+    first = notes["sections"][0]
+    assert first["paragraphs"] and first["bullets"] == []
+    assert first["paragraphs"][0].startswith("**")  # mock bolds the opening sentence
+
+    # Bullet-style notes saved before the paragraph format still validate and save.
+    old = {"title": "Old", "sections": [{"heading": "H", "bullets": ["a point"], "page_number": 1}]}
+    assert client.put(f"/api/documents/{doc_id}/notes", json=old).status_code == 200
+    para = {"title": "New", "sections": [{"heading": "H", "paragraphs": ["A *full* paragraph."], "page_number": 1}]}
+    saved = client.put(f"/api/documents/{doc_id}/notes", json=para).json()
+    assert saved["sections"][0]["paragraphs"] == ["A *full* paragraph."]
+
+    with pytest.raises(ValidationError):
+        NoteSection.model_validate({"heading": "H", "page_number": 1})
+
+
+def test_concept_map_records_its_generator(client, ready_doc):
+    assert client.post(f"/api/documents/{ready_doc['id']}/concepts").json()["generator"] == "mock"

@@ -10,7 +10,7 @@ interface DraftSection {
   key: number
   heading: string
   page_number: number
-  bullets: Array<{ key: number; text: string }>
+  paragraphs: Array<{ key: number; text: string }>
 }
 
 let nextKey = 1
@@ -19,14 +19,15 @@ const toDraft = (notes: NotesDto): DraftSection[] =>
     key: nextKey++,
     heading: s.heading,
     page_number: s.page_number,
-    bullets: s.bullets.map((text) => ({ key: nextKey++, text })),
+    // Older bullet-style notes become one paragraph per point when edited.
+    paragraphs: (s.paragraphs?.length ? s.paragraphs : (s.bullets ?? [])).map((text) => ({ key: nextKey++, text })),
   }))
 
-/** Empty bullets and headings are dropped before saving; the server requires non-empty text. */
+/** Empty paragraphs and headings are dropped before saving; the server requires non-empty text. */
 export function toPayload(title: string, sections: DraftSection[]): NotesEditDto | null {
   const clean = sections
-    .map((s) => ({ heading: s.heading.trim(), page_number: s.page_number, bullets: s.bullets.map((b) => b.text.trim()).filter(Boolean) }))
-    .filter((s) => s.heading && s.bullets.length)
+    .map((s) => ({ heading: s.heading.trim(), page_number: s.page_number, paragraphs: s.paragraphs.map((p) => p.text.trim()).filter(Boolean), bullets: [] }))
+    .filter((s) => s.heading && s.paragraphs.length)
   if (!title.trim() || clean.length === 0) return null
   return { title: title.trim(), sections: clean }
 }
@@ -98,7 +99,7 @@ export function NotesEditor({
       </label>
       {invalid && (
         <p role="status" className="text-sm text-amber">
-          Not saved yet: notes need a title and at least one section with a heading and a point.
+          Not saved yet: notes need a title and at least one section with a heading and a paragraph.
         </p>
       )}
       {sections.map((section, si) => (
@@ -129,28 +130,28 @@ export function NotesEditor({
             </IconButton>
           </div>
           <ul className="mt-3 flex flex-col gap-2">
-            {section.bullets.map((bullet, bi) => (
+            {section.paragraphs.map((bullet, bi) => (
               <li key={bullet.key} className="flex items-start gap-2">
                 <AutoTextarea
-                  label={`Point ${bi + 1} of section ${si + 1}`}
+                  label={`Paragraph ${bi + 1} of section ${si + 1}`}
                   value={bullet.text}
-                  onChange={(v) => edit((d) => ((d[si]!.bullets[bi]!.text = v), d))}
+                  onChange={(v) => edit((d) => ((d[si]!.paragraphs[bi]!.text = v), d))}
                 />
-                <IconButton size="sm" label={`Delete point ${bi + 1}`} onClick={() => edit((d) => (d[si]!.bullets.splice(bi, 1), d))}>
+                <IconButton size="sm" label={`Delete paragraph ${bi + 1}`} onClick={() => edit((d) => (d[si]!.paragraphs.splice(bi, 1), d))}>
                   <Trash2 className="size-3.5" />
                 </IconButton>
               </li>
             ))}
           </ul>
-          <Button size="sm" variant="ghost" className="mt-2" icon={<Plus className="size-4" />} onClick={() => edit((d) => (d[si]!.bullets.push({ key: nextKey++, text: '' }), d))}>
-            Add point
+          <Button size="sm" variant="ghost" className="mt-2" icon={<Plus className="size-4" />} onClick={() => edit((d) => (d[si]!.paragraphs.push({ key: nextKey++, text: '' }), d))}>
+            Add paragraph
           </Button>
         </fieldset>
       ))}
       <Button
         className="self-start"
         icon={<Plus className="size-4" />}
-        onClick={() => edit((d) => [...d, { key: nextKey++, heading: '', page_number: d.at(-1)?.page_number ?? 1, bullets: [{ key: nextKey++, text: '' }] }])}
+        onClick={() => edit((d) => [...d, { key: nextKey++, heading: '', page_number: d.at(-1)?.page_number ?? 1, paragraphs: [{ key: nextKey++, text: '' }] }])}
       >
         Add section
       </Button>
@@ -170,10 +171,10 @@ function AutoTextarea({ label, value, onChange }: { label: string; value: string
     <textarea
       ref={ref}
       aria-label={label}
-      rows={1}
+      rows={3}
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className="min-h-9 flex-1 resize-none overflow-hidden rounded-sm border border-line-strong bg-ink px-3 py-1.5 font-serif text-md leading-relaxed focus:border-signal focus:outline-none"
+      className="min-h-20 flex-1 resize-none overflow-hidden rounded-xl border border-line-strong bg-ink px-3 py-2 text-md leading-relaxed focus:border-signal focus:outline-none"
     />
   )
 }
