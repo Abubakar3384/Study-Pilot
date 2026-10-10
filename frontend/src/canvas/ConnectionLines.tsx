@@ -68,6 +68,7 @@ export const ConnectionLines = memo(function ConnectionLines({
     const { positions, colors, hiPositions } = parts
     parts.material.resolution.set(state.size.width, state.size.height)
     parts.hiMaterial.resolution.set(state.size.width, state.size.height)
+    parts.hiMaterial.color.copy(C.signal)
 
     let hi = 0
     let moving = false

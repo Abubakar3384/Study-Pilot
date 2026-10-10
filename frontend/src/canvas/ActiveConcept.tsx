@@ -40,6 +40,7 @@ export function ActiveConcept({ frame }: { frame: React.RefObject<FrameState | n
       mesh.quaternion.copy(state.camera.quaternion)
       mesh.scale.setScalar(node.radius * 1.4 * a.grow)
       material.opacity = a.shown
+      material.color.copy(C.signal)
     }
     if (moving) state.invalidate()
   })

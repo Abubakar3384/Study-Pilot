@@ -79,9 +79,12 @@ export function ImportanceMark({ importance, selected }: { importance: 1 | 2 | 3
     <span className="flex size-3 shrink-0 items-center justify-center" title={label}>
       <span className="sr-only">{label}</span>
       {importance === 3 ? (
-        <span aria-hidden className={cn('size-2.5 rounded-[2px]', selected ? 'bg-signal' : 'bg-amber')} />
+        <span aria-hidden className={cn('size-2.5 rounded-[2px]', selected ? 'bg-[var(--node-selected)]' : 'bg-[var(--node-key)]')} />
       ) : (
-        <span aria-hidden className={cn('rounded-full', importance === 2 ? 'size-2 bg-[#C3CBD6]' : 'size-1.5 bg-[#8A95A5]', selected && 'bg-signal')} />
+        <span
+          aria-hidden
+          className={cn('rounded-full', importance === 2 ? 'size-2 bg-[var(--node-2)]' : 'size-1.5 bg-[var(--node-1)]', selected && 'bg-[var(--node-selected)]')}
+        />
       )}
     </span>
   )

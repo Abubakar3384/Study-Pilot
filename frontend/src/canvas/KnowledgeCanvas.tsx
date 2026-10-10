@@ -9,6 +9,8 @@ import { placeLabels, type LabelCandidate } from '../graph/labelPlacement'
 import type { FrameState } from './frame'
 import { debugEnabled, FrameStats } from './frameStats'
 import { Scene } from './Scene'
+import { applyPalette } from './palette'
+import { useTheme } from '../app/theme'
 import { isDisposing, ThreeCanvas } from './ThreeCanvas'
 
 export interface KnowledgeCanvasProps {
@@ -94,6 +96,12 @@ function KnowledgeCanvas({
       document.removeEventListener('visibilitychange', onVis)
     }
   }, [])
+  const theme = useTheme()
+  useEffect(() => {
+    applyPalette(theme)
+    invalidate()
+  }, [theme])
+
   const running = active && onScreen && pageVisible
   useEffect(() => {
     if (running) invalidate()

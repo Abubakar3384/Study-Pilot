@@ -2,9 +2,9 @@ import { memo, useEffect, useMemo } from 'react'
 import { useFrame } from '@react-three/fiber'
 import {
   AdditiveBlending, CanvasTexture, Color, IcosahedronGeometry, InstancedBufferAttribute, InstancedMesh, Matrix4,
-  MeshBasicMaterial, PlaneGeometry, Vector3,
+  MeshBasicMaterial, NormalBlending, PlaneGeometry, Vector3,
 } from 'three'
-import { C } from './palette'
+import { C, paletteTheme } from './palette'
 import { damp, type FrameState } from './frame'
 
 const target = new Color()
@@ -97,6 +97,14 @@ export const ConceptNodes = memo(function ConceptNodes({
     const cols = mesh.instanceColor.array as Float32Array
     const hasSelection = selected >= 0
     const hcols = halo.instanceColor!.array as Float32Array
+    const light = paletteTheme() === 'light'
+    const haloMat = halo.material as MeshBasicMaterial
+    const blending = light ? NormalBlending : AdditiveBlending
+    if (haloMat.blending !== blending) {
+      haloMat.blending = blending
+      haloMat.opacity = light ? 0.55 : 1
+      haloMat.needsUpdate = true
+    }
     // The selected node breathes gently (frames are requested only while something is selected).
     const pulse = hasSelection ? 1 + 0.1 * Math.sin(state.clock.elapsedTime * 2.4) : 1
     let moving = hasSelection
@@ -155,9 +163,17 @@ export const ConceptNodes = memo(function ConceptNodes({
       const hs = node.radius * nodeShown[i]! * em * (isSel ? 6.5 * pulse : 5)
       pos.set(nodePos[i * 3]!, nodePos[i * 3 + 1]!, nodePos[i * 3 + 2]!)
       halo.setMatrixAt(i, m4.compose(pos, state.camera.quaternion, scl.setScalar(hs)))
-      hcols[o3] = cols[o3]! * glow
-      hcols[o3 + 1] = cols[o3 + 1]! * glow
-      hcols[o3 + 2] = cols[o3 + 2]! * glow
+      if (light) {
+        // On a light stage a glow can't add light, so tint softly from the background towards the node.
+        const k = Math.min(1, glow * 1.4)
+        hcols[o3] = C.ink.r + (cols[o3]! - C.ink.r) * k
+        hcols[o3 + 1] = C.ink.g + (cols[o3 + 1]! - C.ink.g) * k
+        hcols[o3 + 2] = C.ink.b + (cols[o3 + 2]! - C.ink.b) * k
+      } else {
+        hcols[o3] = cols[o3]! * glow
+        hcols[o3 + 1] = cols[o3 + 1]! * glow
+        hcols[o3 + 2] = cols[o3 + 2]! * glow
+      }
     }
     mesh.instanceMatrix.needsUpdate = true
     mesh.instanceColor.needsUpdate = true

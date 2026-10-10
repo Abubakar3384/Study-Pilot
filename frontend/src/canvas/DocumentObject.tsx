@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { BoxGeometry, MeshBasicMaterial, type Mesh } from 'three'
-import { C } from './palette'
+import { C, paletteTheme } from './palette'
 import type { FrameState } from './frame'
-import { acquirePageTexture, releasePageTexture } from './resources'
+import { acquirePageTextures, getPageTexture, releasePageTextures } from './resources'
 
 /** The uploaded document: rises into view, then fades as its pages leave it. */
 export function DocumentObject({ frame }: { frame: React.RefObject<FrameState | null> }) {
@@ -14,10 +14,9 @@ export function DocumentObject({ frame }: { frame: React.RefObject<FrameState | 
   }, [])
 
   useEffect(() => {
-    material.map = acquirePageTexture()
-    material.needsUpdate = true
+    acquirePageTextures()
     return () => {
-      releasePageTexture()
+      releasePageTextures()
       geometry.dispose()
       material.dispose()
     }
@@ -27,6 +26,12 @@ export function DocumentObject({ frame }: { frame: React.RefObject<FrameState | 
     const mesh = ref.current
     const f = frame.current
     if (!mesh || !f) return
+    const tex = getPageTexture(paletteTheme())
+    if (material.map !== tex) {
+      material.map = tex
+      material.needsUpdate = true
+    }
+    material.color.copy(C.slab)
     const { slabIn, slabOut } = f.snap
     const opacity = slabIn * (1 - slabOut)
     mesh.visible = opacity > 0.001

@@ -5,9 +5,9 @@ import {
   Vector3,
 } from 'three'
 import { scene } from '../design/tokens'
-import { C } from './palette'
+import { C, paletteTheme } from './palette'
 import { damp, POSE_STRIDE, type FrameState } from './frame'
-import { acquirePageTexture, releasePageTexture } from './resources'
+import { acquirePageTextures, getPageTexture, releasePageTextures } from './resources'
 
 const m4 = new Matrix4()
 const q = new Quaternion()
@@ -36,10 +36,9 @@ export function DocumentPages({ frame, count }: { frame: React.RefObject<FrameSt
   }, [geometry, material, count])
 
   useEffect(() => {
-    material.map = acquirePageTexture()
-    material.needsUpdate = true
+    acquirePageTextures()
     return () => {
-      releasePageTexture()
+      releasePageTextures()
       geometry.dispose()
       material.dispose()
     }
@@ -50,6 +49,11 @@ export function DocumentPages({ frame, count }: { frame: React.RefObject<FrameSt
   useFrame((state, dt) => {
     const f = frame.current
     if (!f || !mesh.instanceColor) return
+    const tex = getPageTexture(paletteTheme())
+    if (material.map !== tex) {
+      material.map = tex
+      material.needsUpdate = true
+    }
     const { snap, pagePose, citedSurface, hoveredSurface } = f
     const scanPos = ((performance.now() % scene.scanPeriod) / scene.scanPeriod) * 1.4 - 0.2
     let moving = false

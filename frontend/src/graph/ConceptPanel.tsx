@@ -19,7 +19,7 @@ const PAGES_SHOWN = 6
 const RELATED_SHOWN = 8
 
 const dotColor = (importance: 1 | 2 | 3) =>
-  importance === 3 ? 'bg-amber' : importance === 2 ? 'bg-[#C3CBD6]' : 'bg-[#8A95A5]'
+  importance === 3 ? 'bg-[var(--node-key)]' : importance === 2 ? 'bg-[var(--node-2)]' : 'bg-[var(--node-1)]'
 
 /**
  * Context for the selected concept. It takes at most ~60% of the side column and scrolls on its own;
@@ -53,7 +53,7 @@ export function ConceptPanel({
               <div className="stagger-in flex items-start gap-3" style={{ animationDelay: '0ms' }}>
                 <span
                   aria-hidden
-                  className={cn('mt-[0.7rem] size-2.5 shrink-0 rounded-full', concept.importance === 3 ? 'bg-amber glow-amber' : 'bg-signal glow-signal')}
+                  className={cn('mt-[0.7rem] size-2.5 shrink-0 rounded-full', concept.importance === 3 ? 'bg-[var(--node-key)] glow-amber' : 'bg-[var(--node-selected)] glow-signal')}
                 />
                 <div className="min-w-0 flex-1">
                   <h2 className="font-serif text-[1.75rem] leading-tight font-semibold tracking-[-0.015em] text-text">{concept.title}</h2>

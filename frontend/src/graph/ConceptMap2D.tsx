@@ -211,7 +211,7 @@ function GraphSvg({
             rx={1.5}
             className={cn(
               'transition-colors duration-150',
-              cited.has(p.index) ? 'fill-amber/70 stroke-amber' : 'fill-surface-2 stroke-line-strong',
+              cited.has(p.index) ? 'fill-[var(--node-key)] stroke-[var(--node-key)]' : 'fill-surface-1 stroke-line-strong',
               interactive && onPageClick && 'cursor-pointer hover:stroke-text-3',
             )}
             onClick={interactive && onPageClick ? () => onPageClick(p.fromPage) : undefined}
@@ -265,7 +265,7 @@ function GraphSvg({
                 r={radius(i) * (isSel ? 1.25 : i === hov ? 1.15 : 1)}
                 className={cn(
                   'transition-[fill,opacity] duration-150',
-                  isSel ? 'fill-signal' : n.importance === 3 ? 'fill-amber' : n.importance === 2 ? 'fill-[#C3CBD6]' : 'fill-[#8A95A5]',
+                  isSel ? 'fill-[var(--node-selected)]' : n.importance === 3 ? 'fill-[var(--node-key)]' : n.importance === 2 ? 'fill-[var(--node-2)]' : 'fill-[var(--node-1)]',
                   dim && 'opacity-35',
                 )}
               />

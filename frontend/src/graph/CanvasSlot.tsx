@@ -81,7 +81,7 @@ export function CanvasSlot({ input: rawInput, store, onPageClick, description, c
   }, [use3d, id, input, reducedMotion, callbacks, update])
 
   return (
-    <div className={cn('stage-dark relative overflow-hidden bg-ink', className)}>
+    <div className={cn('relative overflow-hidden bg-ink', className)}>
       <p className="sr-only">{description}</p>
       {use3d ? (
         <>

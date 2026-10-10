@@ -13,6 +13,7 @@ import { DocumentPages } from './DocumentPages'
 import { createFrameState, POSE_STRIDE, type FrameState } from './frame'
 import type { FrameStats } from './frameStats'
 import { Projector } from './Projector'
+import { C } from './palette'
 
 export interface SceneProps {
   input: SceneInput
@@ -133,6 +134,7 @@ export function Scene({ input, store, tier, reducedMotion, frame, stats, onProje
     const f = frame.current
     const seq = sequence.current
     if (!f || !seq) return
+    if (threeScene.fog) threeScene.fog.color.copy(C.fog)
     const now = performance.now()
     const snap = seq.sample(now, f.layout, f.snap)
     store.getState().setPhase(seq.phase(now, snap))
