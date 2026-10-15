@@ -287,3 +287,5 @@ Set `MOCK_MODE` in `.env` to see how the UI behaves when AI calls fail:
 - Tables are created with `create_all` at startup. Add Alembic before changing the schema
   once real data exists.
 - No authentication or multi-user ownership yet. All documents, stars and activity are global.
+#   A I C O N  
+ 
